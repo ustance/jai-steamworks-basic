@@ -1,4 +1,4 @@
 Steam SDK: 1.60
 Jai: 0.1.091
 
-Removed some HTML structs and functions from generated output by hand.
+Requires manual change Msvc_Destructor_Flags -> s32.
