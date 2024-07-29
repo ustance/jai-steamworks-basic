@@ -8,8 +8,16 @@ STEAMWORKS_PATH :: "D:/steamworks/sdk/public";
     generate_bindings();    
 }
 
+//
+// Changed Msvc_Destructor_Flags in the generated file to s32
+//
+
 headers :: string.[
-    "steam/steam_api.h",
+    // clang won't be able to find other #include "steam/*.h" files
+    // I just quick fixed it by changing includes in steam_api_flat.h from "steam/*.h" to "*.h"
+    //
+    // Anyway, steam_api_flat have functions (SteamAPI_SteamUser_v023, etc.) that we need to actually do something useful
+    "steam/steam_api_flat.h",
 ];
 
 

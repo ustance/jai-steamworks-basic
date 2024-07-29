@@ -103,6 +103,10 @@ STEAMNETWORKINGSOCKETS_INTERFACE_VERSION :: "SteamNetworkingSockets012";
 
 STEAMNETWORKINGUTILS_INTERFACE_VERSION :: "SteamNetworkingUtils004";
 
+STEAMGAMESERVER_INTERFACE_VERSION :: "SteamGameServer015";
+
+STEAMGAMESERVERSTATS_INTERFACE_VERSION :: "SteamGameServerStats001";
+
 uint8 :: u8;
 
 int8 :: s8;
@@ -1030,11 +1034,8 @@ CallbackMsg_t :: struct {
     m_cubParam:   s32; // Size of the data pointed to by m_pubParam
 }
 
-ISteamGameServer :: struct {}
-
 ISteamContentServer :: struct {}
 
-ISteamGameServerStats :: struct {}
 ISteamPS3OverlayRender :: struct {}
 
 //-----------------------------------------------------------------------------
@@ -1232,7 +1233,7 @@ ISteamClient_VTable :: struct #type_info_none {
 
     GetISteamMusicRemote: (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMusicRemote #cpp_method;
 
-    GetISteamHTMLSurface: (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *void #cpp_method;
+    GetISteamHTMLSurface: (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamHTMLSurface #cpp_method;
 
     DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess: (this: *ISteamClient, unknown0: #type () -> void #c_call) -> void #cpp_method;
     DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess: (this: *ISteamClient, unknown0: #type () -> void #c_call) -> void #cpp_method;
@@ -1311,7 +1312,7 @@ ISteamClient_GetISteamMusic :: inline (this: *ISteamClient, hSteamuser: HSteamUs
 
 ISteamClient_GetISteamMusicRemote :: inline (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMusicRemote { return this.vtable.GetISteamMusicRemote(this, hSteamuser, hSteamPipe, pchVersion); }
 
-ISteamClient_GetISteamHTMLSurface :: inline (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *void { return this.vtable.GetISteamHTMLSurface(this, hSteamuser, hSteamPipe, pchVersion); }
+ISteamClient_GetISteamHTMLSurface :: inline (this: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamHTMLSurface { return this.vtable.GetISteamHTMLSurface(this, hSteamuser, hSteamPipe, pchVersion); }
 
 ISteamClient_DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess :: inline (this: *ISteamClient, unknown0: #type () -> void #c_call) { this.vtable.DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess(this, unknown0); }
 ISteamClient_DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess :: inline (this: *ISteamClient, unknown0: #type () -> void #c_call) { this.vtable.DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess(this, unknown0); }
@@ -2736,7 +2737,7 @@ LowBatteryPower_t :: struct {
 // Purpose: called when a SteamAsyncCall_t has completed (or failed)
 //-----------------------------------------------------------------------------
 SteamAPICallCompleted_t :: struct {
-    using anon_enum_81 :: enum s32 {
+    anon_enum_81 :: enum s32 {
         k_iCallback :: 703;
     }
     m_hAsyncCall: SteamAPICall_t;
@@ -3228,7 +3229,7 @@ vtable :: (obj: *ISteamMatchmakingRulesResponse) -> *ISteamMatchmakingRulesRespo
 // Typedef for handle type you will receive when querying details on an individual server.
 //-----------------------------------------------------------------------------
 HServerQuery :: s32;
-HSERVERQUERY_INVALID: s64 : 4294967295;
+HSERVERQUERY_INVALID: s32 : 4294967295;
 
 //-----------------------------------------------------------------------------
 // Purpose: Functions for match making services for clients to get to game lists and details
@@ -9196,6 +9197,568 @@ WorkshopEULAStatus_t :: struct {
 HHTMLBrowser :: uint32;
 INVALID_HTMLBROWSER: uint32 : 0;
 
+//-----------------------------------------------------------------------------
+// Purpose: Functions for displaying HTML pages and interacting with them
+//-----------------------------------------------------------------------------
+ISteamHTMLSurface :: struct {
+    vtable: *ISteamHTMLSurface_VTable;
+    EHTMLMouseButton :: enum s32 {
+        Left   :: 0;
+        Right  :: 1;
+        Middle :: 2;
+
+        eHTMLMouseButton_Left   :: Left;
+        eHTMLMouseButton_Right  :: Right;
+        eHTMLMouseButton_Middle :: Middle;
+    }
+
+    EMouseCursor :: enum s32 {
+        user           :: 0;
+        none           :: 1;
+        arrow          :: 2;
+        ibeam          :: 3;
+        hourglass      :: 4;
+        waitarrow      :: 5;
+        crosshair      :: 6;
+        up             :: 7;
+        sizenw         :: 8;
+        sizese         :: 9;
+        sizene         :: 10;
+        sizesw         :: 11;
+        sizew          :: 12;
+        sizee          :: 13;
+        sizen          :: 14;
+        sizes          :: 15;
+        sizewe         :: 16;
+        sizens         :: 17;
+        sizeall        :: 18;
+        no             :: 19;
+        hand           :: 20;
+        blank          :: 21;
+        middle_pan     :: 22;
+        north_pan      :: 23;
+        north_east_pan :: 24;
+        east_pan       :: 25;
+        south_east_pan :: 26;
+        south_pan      :: 27;
+        south_west_pan :: 28;
+        west_pan       :: 29;
+        north_west_pan :: 30;
+        alias          :: 31;
+        cell           :: 32;
+        colresize      :: 33;
+        copycur        :: 34;
+        verticaltext   :: 35;
+        rowresize      :: 36;
+        zoomin         :: 37;
+        zoomout        :: 38;
+        help           :: 39;
+        custom         :: 40;
+
+        last           :: 41;
+
+        dc_user           :: user;
+        dc_none           :: none;
+        dc_arrow          :: arrow;
+        dc_ibeam          :: ibeam;
+        dc_hourglass      :: hourglass;
+        dc_waitarrow      :: waitarrow;
+        dc_crosshair      :: crosshair;
+        dc_up             :: up;
+        dc_sizenw         :: sizenw;
+        dc_sizese         :: sizese;
+        dc_sizene         :: sizene;
+        dc_sizesw         :: sizesw;
+        dc_sizew          :: sizew;
+        dc_sizee          :: sizee;
+        dc_sizen          :: sizen;
+        dc_sizes          :: sizes;
+        dc_sizewe         :: sizewe;
+        dc_sizens         :: sizens;
+        dc_sizeall        :: sizeall;
+        dc_no             :: no;
+        dc_hand           :: hand;
+        dc_blank          :: blank;
+        dc_middle_pan     :: middle_pan;
+        dc_north_pan      :: north_pan;
+        dc_north_east_pan :: north_east_pan;
+        dc_east_pan       :: east_pan;
+        dc_south_east_pan :: south_east_pan;
+        dc_south_pan      :: south_pan;
+        dc_south_west_pan :: south_west_pan;
+        dc_west_pan       :: west_pan;
+        dc_north_west_pan :: north_west_pan;
+        dc_alias          :: alias;
+        dc_cell           :: cell;
+        dc_colresize      :: colresize;
+        dc_copycur        :: copycur;
+        dc_verticaltext   :: verticaltext;
+        dc_rowresize      :: rowresize;
+        dc_zoomin         :: zoomin;
+        dc_zoomout        :: zoomout;
+        dc_help           :: help;
+        dc_custom         :: custom;
+
+        dc_last           :: last;
+    }
+
+    EHTMLKeyModifiers :: enum s32 {
+        None      :: 0;
+        AltDown   :: 1;
+        CtrlDown  :: 2;
+        ShiftDown :: 4;
+
+        k_eHTMLKeyModifier_None      :: None;
+        k_eHTMLKeyModifier_AltDown   :: AltDown;
+        k_eHTMLKeyModifier_CtrlDown  :: CtrlDown;
+        k_eHTMLKeyModifier_ShiftDown :: ShiftDown;
+    }
+}
+ISteamHTMLSurface_VTable :: struct #type_info_none {
+    Destructor: (this: *ISteamHTMLSurface, flags: s32) -> void #cpp_method;
+
+    Init: (this: *ISteamHTMLSurface) -> bool #cpp_method;
+    Shutdown: (this: *ISteamHTMLSurface) -> bool #cpp_method;
+
+    CreateBrowser: (this: *ISteamHTMLSurface, pchUserAgent: *u8, pchUserCSS: *u8) -> SteamAPICall_t #cpp_method;
+
+    RemoveBrowser: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    LoadURL: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchURL: *u8, pchPostData: *u8) -> void #cpp_method;
+
+    SetSize: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, unWidth: uint32, unHeight: uint32) -> void #cpp_method;
+
+    StopLoad: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    Reload: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    GoBack: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    GoForward: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    AddHeader: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchKey: *u8, pchValue: *u8) -> void #cpp_method;
+
+    ExecuteJavascript: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchScript: *u8) -> void #cpp_method;
+
+    MouseUp: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #cpp_method;
+    MouseDown: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #cpp_method;
+    MouseDoubleClick: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #cpp_method;
+
+    MouseMove: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) -> void #cpp_method;
+
+    MouseWheel: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nDelta: int32) -> void #cpp_method;
+
+    KeyDown: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers, bIsSystemKey := false) -> void #cpp_method;
+    KeyUp: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) -> void #cpp_method;
+
+    KeyChar: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, cUnicodeChar: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) -> void #cpp_method;
+
+    SetHorizontalScroll: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) -> void #cpp_method;
+    SetVerticalScroll: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) -> void #cpp_method;
+
+    SetKeyFocus: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bHasKeyFocus: bool) -> void #cpp_method;
+
+    ViewSource: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    CopyToClipboard: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    PasteFromClipboard: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    Find: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSearchStr: *u8, bCurrentlyInFind: bool, bReverse: bool) -> void #cpp_method;
+
+    StopFind: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    GetLinkAtPosition: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) -> void #cpp_method;
+
+    SetCookie: (this: *ISteamHTMLSurface, pchHostname: *u8, pchKey: *u8, pchValue: *u8, pchPath: *u8 = "/", nExpires: RTime32 = 0, bSecure := false, bHTTPOnly := false) -> void #cpp_method;
+
+    SetPageScaleFactor: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flZoom: float, nPointX: s32, nPointY: s32) -> void #cpp_method;
+
+    SetBackgroundMode: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bBackgroundMode: bool) -> void #cpp_method;
+
+    SetDPIScalingFactor: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flDPIScaling: float) -> void #cpp_method;
+
+    OpenDeveloperTools: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #cpp_method;
+
+    AllowStartRequest: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bAllowed: bool) -> void #cpp_method;
+
+    JSDialogResponse: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bResult: bool) -> void #cpp_method;
+
+    FileLoadDialogResponse: (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSelectedFiles: **u8) -> void #cpp_method;
+}
+
+ISteamHTMLSurface_Destructor :: inline (this: *ISteamHTMLSurface, flags: s32) { this.vtable.Destructor(this, flags); }
+
+ISteamHTMLSurface_Init :: inline (this: *ISteamHTMLSurface) -> bool { return this.vtable.Init(this); }
+ISteamHTMLSurface_Shutdown :: inline (this: *ISteamHTMLSurface) -> bool { return this.vtable.Shutdown(this); }
+
+ISteamHTMLSurface_CreateBrowser :: inline (this: *ISteamHTMLSurface, pchUserAgent: *u8, pchUserCSS: *u8) -> SteamAPICall_t { return this.vtable.CreateBrowser(this, pchUserAgent, pchUserCSS); }
+
+ISteamHTMLSurface_RemoveBrowser :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.RemoveBrowser(this, unBrowserHandle); }
+
+ISteamHTMLSurface_LoadURL :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchURL: *u8, pchPostData: *u8) { this.vtable.LoadURL(this, unBrowserHandle, pchURL, pchPostData); }
+
+ISteamHTMLSurface_SetSize :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, unWidth: uint32, unHeight: uint32) { this.vtable.SetSize(this, unBrowserHandle, unWidth, unHeight); }
+
+ISteamHTMLSurface_StopLoad :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.StopLoad(this, unBrowserHandle); }
+
+ISteamHTMLSurface_Reload :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.Reload(this, unBrowserHandle); }
+
+ISteamHTMLSurface_GoBack :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.GoBack(this, unBrowserHandle); }
+
+ISteamHTMLSurface_GoForward :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.GoForward(this, unBrowserHandle); }
+
+ISteamHTMLSurface_AddHeader :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchKey: *u8, pchValue: *u8) { this.vtable.AddHeader(this, unBrowserHandle, pchKey, pchValue); }
+
+ISteamHTMLSurface_ExecuteJavascript :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchScript: *u8) { this.vtable.ExecuteJavascript(this, unBrowserHandle, pchScript); }
+
+ISteamHTMLSurface_MouseUp :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) { this.vtable.MouseUp(this, unBrowserHandle, eMouseButton); }
+ISteamHTMLSurface_MouseDown :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) { this.vtable.MouseDown(this, unBrowserHandle, eMouseButton); }
+ISteamHTMLSurface_MouseDoubleClick :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) { this.vtable.MouseDoubleClick(this, unBrowserHandle, eMouseButton); }
+
+ISteamHTMLSurface_MouseMove :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) { this.vtable.MouseMove(this, unBrowserHandle, x, y); }
+
+ISteamHTMLSurface_MouseWheel :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nDelta: int32) { this.vtable.MouseWheel(this, unBrowserHandle, nDelta); }
+
+ISteamHTMLSurface_KeyDown :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers, bIsSystemKey := false) { this.vtable.KeyDown(this, unBrowserHandle, nNativeKeyCode, eHTMLKeyModifiers, bIsSystemKey); }
+ISteamHTMLSurface_KeyUp :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) { this.vtable.KeyUp(this, unBrowserHandle, nNativeKeyCode, eHTMLKeyModifiers); }
+
+ISteamHTMLSurface_KeyChar :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, cUnicodeChar: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) { this.vtable.KeyChar(this, unBrowserHandle, cUnicodeChar, eHTMLKeyModifiers); }
+
+ISteamHTMLSurface_SetHorizontalScroll :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) { this.vtable.SetHorizontalScroll(this, unBrowserHandle, nAbsolutePixelScroll); }
+ISteamHTMLSurface_SetVerticalScroll :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) { this.vtable.SetVerticalScroll(this, unBrowserHandle, nAbsolutePixelScroll); }
+
+ISteamHTMLSurface_SetKeyFocus :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bHasKeyFocus: bool) { this.vtable.SetKeyFocus(this, unBrowserHandle, bHasKeyFocus); }
+
+ISteamHTMLSurface_ViewSource :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.ViewSource(this, unBrowserHandle); }
+
+ISteamHTMLSurface_CopyToClipboard :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.CopyToClipboard(this, unBrowserHandle); }
+
+ISteamHTMLSurface_PasteFromClipboard :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.PasteFromClipboard(this, unBrowserHandle); }
+
+ISteamHTMLSurface_Find :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSearchStr: *u8, bCurrentlyInFind: bool, bReverse: bool) { this.vtable.Find(this, unBrowserHandle, pchSearchStr, bCurrentlyInFind, bReverse); }
+
+ISteamHTMLSurface_StopFind :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.StopFind(this, unBrowserHandle); }
+
+ISteamHTMLSurface_GetLinkAtPosition :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) { this.vtable.GetLinkAtPosition(this, unBrowserHandle, x, y); }
+
+ISteamHTMLSurface_SetCookie :: inline (this: *ISteamHTMLSurface, pchHostname: *u8, pchKey: *u8, pchValue: *u8, pchPath: *u8 = "/", nExpires: RTime32 = 0, bSecure := false, bHTTPOnly := false) { this.vtable.SetCookie(this, pchHostname, pchKey, pchValue, pchPath, nExpires, bSecure, bHTTPOnly); }
+
+ISteamHTMLSurface_SetPageScaleFactor :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flZoom: float, nPointX: s32, nPointY: s32) { this.vtable.SetPageScaleFactor(this, unBrowserHandle, flZoom, nPointX, nPointY); }
+
+ISteamHTMLSurface_SetBackgroundMode :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bBackgroundMode: bool) { this.vtable.SetBackgroundMode(this, unBrowserHandle, bBackgroundMode); }
+
+ISteamHTMLSurface_SetDPIScalingFactor :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flDPIScaling: float) { this.vtable.SetDPIScalingFactor(this, unBrowserHandle, flDPIScaling); }
+
+ISteamHTMLSurface_OpenDeveloperTools :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) { this.vtable.OpenDeveloperTools(this, unBrowserHandle); }
+
+ISteamHTMLSurface_AllowStartRequest :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bAllowed: bool) { this.vtable.AllowStartRequest(this, unBrowserHandle, bAllowed); }
+
+ISteamHTMLSurface_JSDialogResponse :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bResult: bool) { this.vtable.JSDialogResponse(this, unBrowserHandle, bResult); }
+
+ISteamHTMLSurface_FileLoadDialogResponse :: inline (this: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSelectedFiles: **u8) { this.vtable.FileLoadDialogResponse(this, unBrowserHandle, pchSelectedFiles); }
+
+vtable :: (obj: *ISteamHTMLSurface) -> *ISteamHTMLSurface_VTable { return obj.vtable; }
+
+
+//-----------------------------------------------------------------------------
+// Purpose: The browser is ready for use
+//-----------------------------------------------------------------------------
+HTML_BrowserReady_t :: struct {
+    anon_enum_206 :: enum s32 {
+        k_iCallback :: 4501;
+    }
+    unBrowserHandle: HHTMLBrowser;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: the browser has a pending paint
+//-----------------------------------------------------------------------------
+HTML_NeedsPaint_t :: struct {
+    anon_enum_207 :: enum s32 {
+        k_iCallback :: 4502;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pBGRA:           *u8;
+    unWide:          uint32;
+    unTall:          uint32;
+    unUpdateX:       uint32;
+    unUpdateY:       uint32;
+    unUpdateWide:    uint32;
+    unUpdateTall:    uint32;
+    unScrollX:       uint32;
+    unScrollY:       uint32;
+    flPageScale:     float;
+    unPageSerial:    uint32;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: The browser wanted to navigate to a new page
+//   NOTE - you MUST call AllowStartRequest in response to this callback
+//-----------------------------------------------------------------------------
+HTML_StartRequest_t :: struct {
+    anon_enum_208 :: enum s32 {
+        k_iCallback :: 4503;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchURL:          *u8;
+    pchTarget:       *u8;
+    pchPostData:     *u8;
+    bIsRedirect:     bool;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: The browser has been requested to close due to user interaction (usually from a javascript window.close() call)
+//-----------------------------------------------------------------------------
+HTML_CloseBrowser_t :: struct {
+    anon_enum_209 :: enum s32 {
+        k_iCallback :: 4504;
+    }
+    unBrowserHandle: HHTMLBrowser;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: the browser is navigating to a new url
+//-----------------------------------------------------------------------------
+HTML_URLChanged_t :: struct {
+    anon_enum_210 :: enum s32 {
+        k_iCallback :: 4505;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchURL:          *u8;
+    pchPostData:     *u8;
+    bIsRedirect:     bool;
+    pchPageTitle:    *u8;
+    bNewNavigation:  bool;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: A page is finished loading
+//-----------------------------------------------------------------------------
+HTML_FinishedRequest_t :: struct {
+    anon_enum_211 :: enum s32 {
+        k_iCallback :: 4506;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchURL:          *u8;
+    pchPageTitle:    *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: a request to load this url in a new tab
+//-----------------------------------------------------------------------------
+HTML_OpenLinkInNewTab_t :: struct {
+    anon_enum_212 :: enum s32 {
+        k_iCallback :: 4507;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchURL:          *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: the page has a new title now
+//-----------------------------------------------------------------------------
+HTML_ChangedTitle_t :: struct {
+    anon_enum_213 :: enum s32 {
+        k_iCallback :: 4508;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchTitle:        *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: results from a search
+//-----------------------------------------------------------------------------
+HTML_SearchResults_t :: struct {
+    anon_enum_214 :: enum s32 {
+        k_iCallback :: 4509;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    unResults:       uint32;
+    unCurrentMatch:  uint32;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: page history status changed on the ability to go backwards and forward
+//-----------------------------------------------------------------------------
+HTML_CanGoBackAndForward_t :: struct {
+    anon_enum_215 :: enum s32 {
+        k_iCallback :: 4510;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    bCanGoBack:      bool;
+    bCanGoForward:   bool;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: details on the visibility and size of the horizontal scrollbar
+//-----------------------------------------------------------------------------
+HTML_HorizontalScroll_t :: struct {
+    anon_enum_216 :: enum s32 {
+        k_iCallback :: 4511;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    unScrollMax:     uint32;
+    unScrollCurrent: uint32;
+    flPageScale:     float;
+    bVisible:        bool;
+    unPageSize:      uint32;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: details on the visibility and size of the vertical scrollbar
+//-----------------------------------------------------------------------------
+HTML_VerticalScroll_t :: struct {
+    anon_enum_217 :: enum s32 {
+        k_iCallback :: 4512;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    unScrollMax:     uint32;
+    unScrollCurrent: uint32;
+    flPageScale:     float;
+    bVisible:        bool;
+    unPageSize:      uint32;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: response to GetLinkAtPosition call
+//-----------------------------------------------------------------------------
+HTML_LinkAtPosition_t :: struct {
+    anon_enum_218 :: enum s32 {
+        k_iCallback :: 4513;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    x:               uint32;
+    y:               uint32;
+    pchURL:          *u8;
+    bInput:          bool;
+    bLiveLink:       bool;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: show a Javascript alert dialog, call JSDialogResponse
+//   when the user dismisses this dialog (or right away to ignore it)
+//-----------------------------------------------------------------------------
+HTML_JSAlert_t :: struct {
+    anon_enum_219 :: enum s32 {
+        k_iCallback :: 4514;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchMessage:      *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: show a Javascript confirmation dialog, call JSDialogResponse
+//   when the user dismisses this dialog (or right away to ignore it)
+//-----------------------------------------------------------------------------
+HTML_JSConfirm_t :: struct {
+    anon_enum_220 :: enum s32 {
+        k_iCallback :: 4515;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchMessage:      *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: when received show a file open dialog
+//   then call FileLoadDialogResponse with the file(s) the user selected.
+//-----------------------------------------------------------------------------
+HTML_FileOpenDialog_t :: struct {
+    anon_enum_221 :: enum s32 {
+        k_iCallback :: 4516;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchTitle:        *u8;
+    pchInitialFile:  *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: a new html window is being created.
+//
+// IMPORTANT NOTE: at this time, the API does not allow you to acknowledge or
+// render the contents of this new window, so the new window is always destroyed
+// immediately. The URL and other parameters of the new window are passed here
+// to give your application the opportunity to call CreateBrowser and set up
+// a new browser in response to the attempted popup, if you wish to do so.
+//-----------------------------------------------------------------------------
+HTML_NewWindow_t :: struct {
+    anon_enum_222 :: enum s32 {
+        k_iCallback :: 4521;
+    }
+    unBrowserHandle:                  HHTMLBrowser;
+    pchURL:                           *u8;
+    unX:                              uint32;
+    unY:                              uint32;
+    unWide:                           uint32;
+    unTall:                           uint32;
+    unNewWindow_BrowserHandle_IGNORE: HHTMLBrowser;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: change the cursor to display
+//-----------------------------------------------------------------------------
+HTML_SetCursor_t :: struct {
+    anon_enum_223 :: enum s32 {
+        k_iCallback :: 4522;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    eMouseCursor:    uint32;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: informational message from the browser
+//-----------------------------------------------------------------------------
+HTML_StatusText_t :: struct {
+    anon_enum_224 :: enum s32 {
+        k_iCallback :: 4523;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchMsg:          *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: show a tooltip
+//-----------------------------------------------------------------------------
+HTML_ShowToolTip_t :: struct {
+    anon_enum_225 :: enum s32 {
+        k_iCallback :: 4524;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchMsg:          *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: update the text of an existing tooltip
+//-----------------------------------------------------------------------------
+HTML_UpdateToolTip_t :: struct {
+    anon_enum_226 :: enum s32 {
+        k_iCallback :: 4525;
+    }
+    unBrowserHandle: HHTMLBrowser;
+    pchMsg:          *u8;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: hide the tooltip you are showing
+//-----------------------------------------------------------------------------
+HTML_HideToolTip_t :: struct {
+    anon_enum_227 :: enum s32 {
+        k_iCallback :: 4526;
+    }
+    unBrowserHandle: HHTMLBrowser;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: The browser has restarted due to an internal failure, use this new handle value
+//-----------------------------------------------------------------------------
+HTML_BrowserRestarted_t :: struct {
+    anon_enum_228 :: enum s32 {
+        k_iCallback :: 4527;
+    }
+    unBrowserHandle:    HHTMLBrowser;
+    unOldBrowserHandle: HHTMLBrowser;
+}
+
 // Every individual instance of an item has a globally-unique ItemInstanceID.
 // This ID is unique to the combination of (player, specific item instance)
 // and will not be transferred to another player or re-used for another item.
@@ -11490,6 +12053,1621 @@ SteamAPI_ManualDispatch_GetAPICallResult :: (hSteamPipe: HSteamPipe, hSteamAPICa
 // Internal implementation of SteamAPI_InitEx.  This is done in a way that checks
 // all of the versions of interfaces from headers being compiled into this code.
 SteamInternal_SteamAPI_Init :: (pszInternalCheckInterfaceVersions: *u8, pOutErrMsg: *SteamErrMsg) -> ESteamAPIInitResult #foreign steam_api64;
+
+//-----------------------------------------------------------------------------
+// Purpose: Functions for authenticating users via Steam to play on a game server
+//-----------------------------------------------------------------------------
+ISteamGameServer :: struct {
+    vtable: *ISteamGameServer_VTable;
+}
+ISteamGameServer_VTable :: struct #type_info_none {
+    InitGameServer: (this: *ISteamGameServer, unIP: uint32, usGamePort: uint16, usQueryPort: uint16, unFlags: uint32, nGameAppId: AppId_t, pchVersionString: *u8) -> bool #cpp_method;
+
+    SetProduct: (this: *ISteamGameServer, pszProduct: *u8) -> void #cpp_method;
+
+    SetGameDescription: (this: *ISteamGameServer, pszGameDescription: *u8) -> void #cpp_method;
+
+    SetModDir: (this: *ISteamGameServer, pszModDir: *u8) -> void #cpp_method;
+
+    SetDedicatedServer: (this: *ISteamGameServer, bDedicated: bool) -> void #cpp_method;
+
+    LogOn: (this: *ISteamGameServer, pszToken: *u8) -> void #cpp_method;
+
+    LogOnAnonymous: (this: *ISteamGameServer) -> void #cpp_method;
+
+    LogOff: (this: *ISteamGameServer) -> void #cpp_method;
+
+    BLoggedOn: (this: *ISteamGameServer) -> bool #cpp_method;
+    BSecure: (this: *ISteamGameServer) -> bool #cpp_method;
+    GetSteamID: (this: *ISteamGameServer) -> CSteamID #cpp_method #cpp_return_type_is_non_pod;
+
+    WasRestartRequested: (this: *ISteamGameServer) -> bool #cpp_method;
+
+    SetMaxPlayerCount: (this: *ISteamGameServer, cPlayersMax: s32) -> void #cpp_method;
+
+    SetBotPlayerCount: (this: *ISteamGameServer, cBotplayers: s32) -> void #cpp_method;
+
+    SetServerName: (this: *ISteamGameServer, pszServerName: *u8) -> void #cpp_method;
+
+    SetMapName: (this: *ISteamGameServer, pszMapName: *u8) -> void #cpp_method;
+
+    SetPasswordProtected: (this: *ISteamGameServer, bPasswordProtected: bool) -> void #cpp_method;
+
+    SetSpectatorPort: (this: *ISteamGameServer, unSpectatorPort: uint16) -> void #cpp_method;
+
+    SetSpectatorServerName: (this: *ISteamGameServer, pszSpectatorServerName: *u8) -> void #cpp_method;
+
+    ClearAllKeyValues: (this: *ISteamGameServer) -> void #cpp_method;
+
+    SetKeyValue: (this: *ISteamGameServer, pKey: *u8, pValue: *u8) -> void #cpp_method;
+
+    SetGameTags: (this: *ISteamGameServer, pchGameTags: *u8) -> void #cpp_method;
+
+    SetGameData: (this: *ISteamGameServer, pchGameData: *u8) -> void #cpp_method;
+
+    SetRegion: (this: *ISteamGameServer, pszRegion: *u8) -> void #cpp_method;
+
+    SetAdvertiseServerActive: (this: *ISteamGameServer, bActive: bool) -> void #cpp_method;
+
+    GetAuthSessionTicket: (this: *ISteamGameServer, pTicket: *void, cbMaxTicket: s32, pcbTicket: *uint32, pSnid: *SteamNetworkingIdentity) -> HAuthTicket #cpp_method;
+
+    BeginAuthSession: (this: *ISteamGameServer, pAuthTicket: *void, cbAuthTicket: s32, steamID: CSteamID) -> EBeginAuthSessionResult #cpp_method;
+
+    EndAuthSession: (this: *ISteamGameServer, steamID: CSteamID) -> void #cpp_method;
+
+    CancelAuthTicket: (this: *ISteamGameServer, hAuthTicket: HAuthTicket) -> void #cpp_method;
+
+    UserHasLicenseForApp: (this: *ISteamGameServer, steamID: CSteamID, appID: AppId_t) -> EUserHasLicenseForAppResult #cpp_method;
+
+    RequestUserGroupStatus: (this: *ISteamGameServer, steamIDUser: CSteamID, steamIDGroup: CSteamID) -> bool #cpp_method;
+
+    GetGameplayStats: (this: *ISteamGameServer) -> void #cpp_method;
+
+    GetServerReputation: (this: *ISteamGameServer) -> SteamAPICall_t #cpp_method;
+
+    GetPublicIP: (this: *ISteamGameServer) -> SteamIPAddress_t #cpp_method;
+
+    HandleIncomingPacket: (this: *ISteamGameServer, pData: *void, cbData: s32, srcIP: uint32, srcPort: uint16) -> bool #cpp_method;
+
+    GetNextOutgoingPacket: (this: *ISteamGameServer, pOut: *void, cbMaxOut: s32, pNetAdr: *uint32, pPort: *uint16) -> s32 #cpp_method;
+
+    AssociateWithClan: (this: *ISteamGameServer, steamIDClan: CSteamID) -> SteamAPICall_t #cpp_method;
+
+    ComputeNewPlayerCompatibility: (this: *ISteamGameServer, steamIDNewPlayer: CSteamID) -> SteamAPICall_t #cpp_method;
+
+    SendUserConnectAndAuthenticate_DEPRECATED: (this: *ISteamGameServer, unIPClient: uint32, pvAuthBlob: *void, cubAuthBlobSize: uint32, pSteamIDUser: *CSteamID) -> bool #cpp_method;
+
+    CreateUnauthenticatedUserConnection: (this: *ISteamGameServer) -> CSteamID #cpp_method #cpp_return_type_is_non_pod;
+
+    SendUserDisconnect_DEPRECATED: (this: *ISteamGameServer, steamIDUser: CSteamID) -> void #cpp_method;
+
+    BUpdateUserData: (this: *ISteamGameServer, steamIDUser: CSteamID, pchPlayerName: *u8, uScore: uint32) -> bool #cpp_method;
+
+    SetMasterServerHeartbeatInterval_DEPRECATED: (this: *ISteamGameServer, iHeartbeatInterval: s32) -> void #cpp_method;
+    ForceMasterServerHeartbeat_DEPRECATED: (this: *ISteamGameServer) -> void #cpp_method;
+}
+
+ISteamGameServer_InitGameServer :: inline (this: *ISteamGameServer, unIP: uint32, usGamePort: uint16, usQueryPort: uint16, unFlags: uint32, nGameAppId: AppId_t, pchVersionString: *u8) -> bool { return this.vtable.InitGameServer(this, unIP, usGamePort, usQueryPort, unFlags, nGameAppId, pchVersionString); }
+
+ISteamGameServer_SetProduct :: inline (this: *ISteamGameServer, pszProduct: *u8) { this.vtable.SetProduct(this, pszProduct); }
+
+ISteamGameServer_SetGameDescription :: inline (this: *ISteamGameServer, pszGameDescription: *u8) { this.vtable.SetGameDescription(this, pszGameDescription); }
+
+ISteamGameServer_SetModDir :: inline (this: *ISteamGameServer, pszModDir: *u8) { this.vtable.SetModDir(this, pszModDir); }
+
+ISteamGameServer_SetDedicatedServer :: inline (this: *ISteamGameServer, bDedicated: bool) { this.vtable.SetDedicatedServer(this, bDedicated); }
+
+ISteamGameServer_LogOn :: inline (this: *ISteamGameServer, pszToken: *u8) { this.vtable.LogOn(this, pszToken); }
+
+ISteamGameServer_LogOnAnonymous :: inline (this: *ISteamGameServer) { this.vtable.LogOnAnonymous(this); }
+
+ISteamGameServer_LogOff :: inline (this: *ISteamGameServer) { this.vtable.LogOff(this); }
+
+ISteamGameServer_BLoggedOn :: inline (this: *ISteamGameServer) -> bool { return this.vtable.BLoggedOn(this); }
+ISteamGameServer_BSecure :: inline (this: *ISteamGameServer) -> bool { return this.vtable.BSecure(this); }
+ISteamGameServer_GetSteamID :: inline (this: *ISteamGameServer) -> CSteamID { return this.vtable.GetSteamID(this); }
+
+ISteamGameServer_WasRestartRequested :: inline (this: *ISteamGameServer) -> bool { return this.vtable.WasRestartRequested(this); }
+
+ISteamGameServer_SetMaxPlayerCount :: inline (this: *ISteamGameServer, cPlayersMax: s32) { this.vtable.SetMaxPlayerCount(this, cPlayersMax); }
+
+ISteamGameServer_SetBotPlayerCount :: inline (this: *ISteamGameServer, cBotplayers: s32) { this.vtable.SetBotPlayerCount(this, cBotplayers); }
+
+ISteamGameServer_SetServerName :: inline (this: *ISteamGameServer, pszServerName: *u8) { this.vtable.SetServerName(this, pszServerName); }
+
+ISteamGameServer_SetMapName :: inline (this: *ISteamGameServer, pszMapName: *u8) { this.vtable.SetMapName(this, pszMapName); }
+
+ISteamGameServer_SetPasswordProtected :: inline (this: *ISteamGameServer, bPasswordProtected: bool) { this.vtable.SetPasswordProtected(this, bPasswordProtected); }
+
+ISteamGameServer_SetSpectatorPort :: inline (this: *ISteamGameServer, unSpectatorPort: uint16) { this.vtable.SetSpectatorPort(this, unSpectatorPort); }
+
+ISteamGameServer_SetSpectatorServerName :: inline (this: *ISteamGameServer, pszSpectatorServerName: *u8) { this.vtable.SetSpectatorServerName(this, pszSpectatorServerName); }
+
+ISteamGameServer_ClearAllKeyValues :: inline (this: *ISteamGameServer) { this.vtable.ClearAllKeyValues(this); }
+
+ISteamGameServer_SetKeyValue :: inline (this: *ISteamGameServer, pKey: *u8, pValue: *u8) { this.vtable.SetKeyValue(this, pKey, pValue); }
+
+ISteamGameServer_SetGameTags :: inline (this: *ISteamGameServer, pchGameTags: *u8) { this.vtable.SetGameTags(this, pchGameTags); }
+
+ISteamGameServer_SetGameData :: inline (this: *ISteamGameServer, pchGameData: *u8) { this.vtable.SetGameData(this, pchGameData); }
+
+ISteamGameServer_SetRegion :: inline (this: *ISteamGameServer, pszRegion: *u8) { this.vtable.SetRegion(this, pszRegion); }
+
+ISteamGameServer_SetAdvertiseServerActive :: inline (this: *ISteamGameServer, bActive: bool) { this.vtable.SetAdvertiseServerActive(this, bActive); }
+
+ISteamGameServer_GetAuthSessionTicket :: inline (this: *ISteamGameServer, pTicket: *void, cbMaxTicket: s32, pcbTicket: *uint32, pSnid: *SteamNetworkingIdentity) -> HAuthTicket { return this.vtable.GetAuthSessionTicket(this, pTicket, cbMaxTicket, pcbTicket, pSnid); }
+
+ISteamGameServer_BeginAuthSession :: inline (this: *ISteamGameServer, pAuthTicket: *void, cbAuthTicket: s32, steamID: CSteamID) -> EBeginAuthSessionResult { return this.vtable.BeginAuthSession(this, pAuthTicket, cbAuthTicket, steamID); }
+
+ISteamGameServer_EndAuthSession :: inline (this: *ISteamGameServer, steamID: CSteamID) { this.vtable.EndAuthSession(this, steamID); }
+
+ISteamGameServer_CancelAuthTicket :: inline (this: *ISteamGameServer, hAuthTicket: HAuthTicket) { this.vtable.CancelAuthTicket(this, hAuthTicket); }
+
+ISteamGameServer_UserHasLicenseForApp :: inline (this: *ISteamGameServer, steamID: CSteamID, appID: AppId_t) -> EUserHasLicenseForAppResult { return this.vtable.UserHasLicenseForApp(this, steamID, appID); }
+
+ISteamGameServer_RequestUserGroupStatus :: inline (this: *ISteamGameServer, steamIDUser: CSteamID, steamIDGroup: CSteamID) -> bool { return this.vtable.RequestUserGroupStatus(this, steamIDUser, steamIDGroup); }
+
+ISteamGameServer_GetGameplayStats :: inline (this: *ISteamGameServer) { this.vtable.GetGameplayStats(this); }
+
+ISteamGameServer_GetServerReputation :: inline (this: *ISteamGameServer) -> SteamAPICall_t { return this.vtable.GetServerReputation(this); }
+
+ISteamGameServer_GetPublicIP :: inline (this: *ISteamGameServer) -> SteamIPAddress_t { return this.vtable.GetPublicIP(this); }
+
+ISteamGameServer_HandleIncomingPacket :: inline (this: *ISteamGameServer, pData: *void, cbData: s32, srcIP: uint32, srcPort: uint16) -> bool { return this.vtable.HandleIncomingPacket(this, pData, cbData, srcIP, srcPort); }
+
+ISteamGameServer_GetNextOutgoingPacket :: inline (this: *ISteamGameServer, pOut: *void, cbMaxOut: s32, pNetAdr: *uint32, pPort: *uint16) -> s32 { return this.vtable.GetNextOutgoingPacket(this, pOut, cbMaxOut, pNetAdr, pPort); }
+
+ISteamGameServer_AssociateWithClan :: inline (this: *ISteamGameServer, steamIDClan: CSteamID) -> SteamAPICall_t { return this.vtable.AssociateWithClan(this, steamIDClan); }
+
+ISteamGameServer_ComputeNewPlayerCompatibility :: inline (this: *ISteamGameServer, steamIDNewPlayer: CSteamID) -> SteamAPICall_t { return this.vtable.ComputeNewPlayerCompatibility(this, steamIDNewPlayer); }
+
+ISteamGameServer_SendUserConnectAndAuthenticate_DEPRECATED :: inline (this: *ISteamGameServer, unIPClient: uint32, pvAuthBlob: *void, cubAuthBlobSize: uint32, pSteamIDUser: *CSteamID) -> bool { return this.vtable.SendUserConnectAndAuthenticate_DEPRECATED(this, unIPClient, pvAuthBlob, cubAuthBlobSize, pSteamIDUser); }
+
+ISteamGameServer_CreateUnauthenticatedUserConnection :: inline (this: *ISteamGameServer) -> CSteamID { return this.vtable.CreateUnauthenticatedUserConnection(this); }
+
+ISteamGameServer_SendUserDisconnect_DEPRECATED :: inline (this: *ISteamGameServer, steamIDUser: CSteamID) { this.vtable.SendUserDisconnect_DEPRECATED(this, steamIDUser); }
+
+ISteamGameServer_BUpdateUserData :: inline (this: *ISteamGameServer, steamIDUser: CSteamID, pchPlayerName: *u8, uScore: uint32) -> bool { return this.vtable.BUpdateUserData(this, steamIDUser, pchPlayerName, uScore); }
+
+ISteamGameServer_SetMasterServerHeartbeatInterval_DEPRECATED :: inline (this: *ISteamGameServer, iHeartbeatInterval: s32) { this.vtable.SetMasterServerHeartbeatInterval_DEPRECATED(this, iHeartbeatInterval); }
+ISteamGameServer_ForceMasterServerHeartbeat_DEPRECATED :: inline (this: *ISteamGameServer) { this.vtable.ForceMasterServerHeartbeat_DEPRECATED(this); }
+
+vtable :: (obj: *ISteamGameServer) -> *ISteamGameServer_VTable { return obj.vtable; }
+
+
+// client has been approved to connect to this game server
+GSClientApprove_t :: struct {
+    anon_enum_247 :: enum s32 {
+        k_iCallback :: 201;
+    }
+    m_SteamID:      CSteamID; // SteamID of approved player
+    m_OwnerSteamID: CSteamID; // SteamID of original owner for game license
+}
+
+// client has been denied to connection to this game server
+GSClientDeny_t :: struct {
+    anon_enum_248 :: enum s32 {
+        k_iCallback :: 202;
+    }
+    m_SteamID:          CSteamID;
+    m_eDenyReason:      EDenyReason;
+    m_rgchOptionalText: [128] u8;
+}
+
+// request the game server should kick the user
+GSClientKick_t :: struct {
+    anon_enum_249 :: enum s32 {
+        k_iCallback :: 203;
+    }
+    m_SteamID:     CSteamID;
+    m_eDenyReason: EDenyReason;
+}
+
+// client achievement info
+GSClientAchievementStatus_t :: struct {
+    anon_enum_250 :: enum s32 {
+        k_iCallback :: 206;
+    }
+    m_SteamID:        uint64;
+    m_pchAchievement: [128] u8;
+    m_bUnlocked:      bool;
+}
+
+// received when the game server requests to be displayed as secure (VAC protected)
+// m_bSecure is true if the game server should display itself as secure to users, false otherwise
+GSPolicyResponse_t :: struct {
+    anon_enum_251 :: enum s32 {
+        k_iCallback :: 115;
+    }
+    m_bSecure: uint8;
+}
+
+// GS gameplay stats info
+GSGameplayStats_t :: struct {
+    anon_enum_252 :: enum s32 {
+        k_iCallback :: 207;
+    }
+    m_eResult:              EResult; // Result of the call
+    m_nRank:                int32; // Overall rank of the server (0-based)
+    m_unTotalConnects:      uint32; // Total number of clients who have ever connected to the server
+    m_unTotalMinutesPlayed: uint32; // Total number of minutes ever played on the server
+}
+
+// send as a reply to RequestUserGroupStatus()
+GSClientGroupStatus_t :: struct {
+    anon_enum_253 :: enum s32 {
+        k_iCallback :: 208;
+    }
+    m_SteamIDUser:  CSteamID;
+    m_SteamIDGroup: CSteamID;
+    m_bMember:      bool;
+    m_bOfficer:     bool;
+}
+
+// Sent as a reply to GetServerReputation()
+GSReputation_t :: struct {
+    anon_enum_254 :: enum s32 {
+        k_iCallback :: 209;
+    }
+    m_eResult:           EResult; // Result of the call;
+    m_unReputationScore: uint32; // The reputation score for the game server
+    m_bBanned:           bool; // True if the server is banned from the Steam
+
+    m_unBannedIP:        uint32; // The IP of the banned server
+    m_usBannedPort:      uint16; // The port of the banned server
+    m_ulBannedGameID:    uint64; // The game ID the banned server is serving
+    m_unBanExpires:      uint32; // Time the ban expires, expressed in the Unix epoch (seconds since 1/1/1970)
+}
+
+// Sent as a reply to AssociateWithClan()
+AssociateWithClanResult_t :: struct {
+    anon_enum_255 :: enum s32 {
+        k_iCallback :: 210;
+    }
+    m_eResult: EResult; // Result of the call;
+}
+
+// Sent as a reply to ComputeNewPlayerCompatibility()
+ComputeNewPlayerCompatibilityResult_t :: struct {
+    anon_enum_256 :: enum s32 {
+        k_iCallback :: 211;
+    }
+    m_eResult:                           EResult; // Result of the call;
+    m_cPlayersThatDontLikeCandidate:     s32;
+    m_cPlayersThatCandidateDoesntLike:   s32;
+    m_cClanPlayersThatDontLikeCandidate: s32;
+    m_SteamIDCandidate:                  CSteamID;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Functions for authenticating users via Steam to play on a game server
+//-----------------------------------------------------------------------------
+ISteamGameServerStats :: struct {
+    vtable: *ISteamGameServerStats_VTable;
+}
+ISteamGameServerStats_VTable :: struct #type_info_none {
+    RequestUserStats: (this: *ISteamGameServerStats, steamIDUser: CSteamID) -> SteamAPICall_t #cpp_method;
+
+    GetUserStat: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, pData: *float) -> bool #cpp_method;
+
+    GetUserStat_1: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, pData: *int32) -> bool #cpp_method;
+
+    GetUserAchievement: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, pbAchieved: *bool) -> bool #cpp_method;
+
+    SetUserStat: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, fData: float) -> bool #cpp_method;
+
+    SetUserStat_1: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, nData: int32) -> bool #cpp_method;
+
+    UpdateUserAvgRateStat: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, flCountThisSession: float, dSessionLength: float64) -> bool #cpp_method;
+
+    SetUserAchievement: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8) -> bool #cpp_method;
+    ClearUserAchievement: (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8) -> bool #cpp_method;
+
+    StoreUserStats: (this: *ISteamGameServerStats, steamIDUser: CSteamID) -> SteamAPICall_t #cpp_method;
+}
+
+ISteamGameServerStats_RequestUserStats :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID) -> SteamAPICall_t { return this.vtable.RequestUserStats(this, steamIDUser); }
+
+ISteamGameServerStats_GetUserStat :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, pData: *float) -> bool { return this.vtable.GetUserStat(this, steamIDUser, pchName, pData); }
+
+ISteamGameServerStats_GetUserStat_1 :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, pData: *int32) -> bool { return this.vtable.GetUserStat_1(this, steamIDUser, pchName, pData); }
+
+ISteamGameServerStats_GetUserAchievement :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, pbAchieved: *bool) -> bool { return this.vtable.GetUserAchievement(this, steamIDUser, pchName, pbAchieved); }
+
+ISteamGameServerStats_SetUserStat :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, fData: float) -> bool { return this.vtable.SetUserStat(this, steamIDUser, pchName, fData); }
+
+ISteamGameServerStats_SetUserStat_1 :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: /*const*/ *u8, nData: int32) -> bool { return this.vtable.SetUserStat_1(this, steamIDUser, pchName, nData); }
+
+ISteamGameServerStats_UpdateUserAvgRateStat :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8, flCountThisSession: float, dSessionLength: float64) -> bool { return this.vtable.UpdateUserAvgRateStat(this, steamIDUser, pchName, flCountThisSession, dSessionLength); }
+
+ISteamGameServerStats_SetUserAchievement :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8) -> bool { return this.vtable.SetUserAchievement(this, steamIDUser, pchName); }
+ISteamGameServerStats_ClearUserAchievement :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID, pchName: *u8) -> bool { return this.vtable.ClearUserAchievement(this, steamIDUser, pchName); }
+
+ISteamGameServerStats_StoreUserStats :: inline (this: *ISteamGameServerStats, steamIDUser: CSteamID) -> SteamAPICall_t { return this.vtable.StoreUserStats(this, steamIDUser); }
+
+vtable :: (obj: *ISteamGameServerStats) -> *ISteamGameServerStats_VTable { return obj.vtable; }
+
+
+//-----------------------------------------------------------------------------
+// Purpose: called when the latests stats and achievements have been received
+//			from the server
+//-----------------------------------------------------------------------------
+GSStatsReceived_t :: struct {
+    anon_enum_257 :: enum s32 {
+        k_iCallback :: 1800;
+    }
+    m_eResult:     EResult; // Success / error fetching the stats
+    m_steamIDUser: CSteamID #align 4; // The user for whom the stats are retrieved for
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: result of a request to store the user stats for a game
+//-----------------------------------------------------------------------------
+GSStatsStored_t :: struct {
+    anon_enum_258 :: enum s32 {
+        k_iCallback :: 1801;
+    }
+    m_eResult:     EResult; // success / error
+    m_steamIDUser: CSteamID #align 4; // The user for whom the stats were stored
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Callback indicating that a user's stats have been unloaded.
+//  Call RequestUserStats again to access stats for this user
+//-----------------------------------------------------------------------------
+GSStatsUnloaded_t :: struct {
+    anon_enum_259 :: enum s32 {
+        k_iCallback :: 1108;
+    }
+    m_steamIDUser: CSteamID; // User whose stats have been unloaded
+}
+
+uint64_steamid :: uint64;
+uint64_gameid :: uint64;
+
+// ISteamClient
+SteamAPI_ISteamClient_CreateSteamPipe :: (self: *ISteamClient) -> HSteamPipe #foreign steam_api64;
+SteamAPI_ISteamClient_BReleaseSteamPipe :: (self: *ISteamClient, hSteamPipe: HSteamPipe) -> bool #foreign steam_api64;
+SteamAPI_ISteamClient_ConnectToGlobalUser :: (self: *ISteamClient, hSteamPipe: HSteamPipe) -> HSteamUser #foreign steam_api64;
+SteamAPI_ISteamClient_CreateLocalUser :: (self: *ISteamClient, phSteamPipe: *HSteamPipe, eAccountType: EAccountType) -> HSteamUser #foreign steam_api64;
+SteamAPI_ISteamClient_ReleaseUser :: (self: *ISteamClient, hSteamPipe: HSteamPipe, hUser: HSteamUser) -> void #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamUser :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamUser #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamGameServer :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamGameServer #foreign steam_api64;
+SteamAPI_ISteamClient_SetLocalIPBinding :: (self: *ISteamClient, unIP: *SteamIPAddress_t, usPort: uint16) -> void #foreign steam_api64;
+SteamAPI_ISteamClient_SetLocalIPBinding :: (self: *ISteamClient, unIP: SteamIPAddress_t, usPort: uint16) #no_context {
+    SteamAPI_ISteamClient_SetLocalIPBinding(self, *unIP, usPort);
+}
+SteamAPI_ISteamClient_GetISteamFriends :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamFriends #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamUtils :: (self: *ISteamClient, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamUtils #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamMatchmaking :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMatchmaking #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamMatchmakingServers :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMatchmakingServers #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamGenericInterface :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *void #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamUserStats :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamUserStats #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamGameServerStats :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamGameServerStats #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamApps :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamApps #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamNetworking :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamNetworking #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamRemoteStorage :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamRemoteStorage #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamScreenshots :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamScreenshots #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamGameSearch :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamGameSearch #foreign steam_api64;
+SteamAPI_ISteamClient_GetIPCCallCount :: (self: *ISteamClient) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamClient_SetWarningMessageHook :: (self: *ISteamClient, pFunction: SteamAPIWarningMessageHook_t) -> void #foreign steam_api64;
+SteamAPI_ISteamClient_BShutdownIfAllPipesClosed :: (self: *ISteamClient) -> bool #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamHTTP :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamHTTP #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamController :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamController #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamUGC :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamUGC #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamMusic :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMusic #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamMusicRemote :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamMusicRemote #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamHTMLSurface :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamHTMLSurface #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamInventory :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamInventory #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamVideo :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamVideo #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamParentalSettings :: (self: *ISteamClient, hSteamuser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamParentalSettings #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamInput :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamInput #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamParties :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamParties #foreign steam_api64;
+SteamAPI_ISteamClient_GetISteamRemotePlay :: (self: *ISteamClient, hSteamUser: HSteamUser, hSteamPipe: HSteamPipe, pchVersion: *u8) -> *ISteamRemotePlay #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamUser_v023 :: () -> *ISteamUser #foreign steam_api64;
+
+SteamAPI_ISteamUser_GetHSteamUser :: (self: *ISteamUser) -> HSteamUser #foreign steam_api64;
+SteamAPI_ISteamUser_BLoggedOn :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_GetSteamID :: (self: *ISteamUser) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamUser_InitiateGameConnection_DEPRECATED :: (self: *ISteamUser, pAuthBlob: *void, cbMaxAuthBlob: s32, steamIDGameServer: uint64_steamid, unIPServer: uint32, usPortServer: uint16, bSecure: bool) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUser_TerminateGameConnection_DEPRECATED :: (self: *ISteamUser, unIPServer: uint32, usPortServer: uint16) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_TrackAppUsageEvent :: (self: *ISteamUser, gameID: uint64_gameid, eAppUsageEvent: s32, pchExtraInfo: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_GetUserDataFolder :: (self: *ISteamUser, pchBuffer: *u8, cubBuffer: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_StartVoiceRecording :: (self: *ISteamUser) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_StopVoiceRecording :: (self: *ISteamUser) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_GetAvailableVoice :: (self: *ISteamUser, pcbCompressed: *uint32, pcbUncompressed_Deprecated: *uint32, nUncompressedVoiceDesiredSampleRate_Deprecated: uint32) -> EVoiceResult #foreign steam_api64;
+SteamAPI_ISteamUser_GetVoice :: (self: *ISteamUser, bWantCompressed: bool, pDestBuffer: *void, cbDestBufferSize: uint32, nBytesWritten: *uint32, bWantUncompressed_Deprecated: bool, pUncompressedDestBuffer_Deprecated: *void, cbUncompressedDestBufferSize_Deprecated: uint32, nUncompressBytesWritten_Deprecated: *uint32, nUncompressedVoiceDesiredSampleRate_Deprecated: uint32) -> EVoiceResult #foreign steam_api64;
+SteamAPI_ISteamUser_DecompressVoice :: (self: *ISteamUser, pCompressed: *void, cbCompressed: uint32, pDestBuffer: *void, cbDestBufferSize: uint32, nBytesWritten: *uint32, nDesiredSampleRate: uint32) -> EVoiceResult #foreign steam_api64;
+SteamAPI_ISteamUser_GetVoiceOptimalSampleRate :: (self: *ISteamUser) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUser_GetAuthSessionTicket :: (self: *ISteamUser, pTicket: *void, cbMaxTicket: s32, pcbTicket: *uint32, pSteamNetworkingIdentity: *SteamNetworkingIdentity) -> HAuthTicket #foreign steam_api64;
+SteamAPI_ISteamUser_GetAuthTicketForWebApi :: (self: *ISteamUser, pchIdentity: *u8) -> HAuthTicket #foreign steam_api64;
+SteamAPI_ISteamUser_BeginAuthSession :: (self: *ISteamUser, pAuthTicket: *void, cbAuthTicket: s32, steamID: uint64_steamid) -> EBeginAuthSessionResult #foreign steam_api64;
+SteamAPI_ISteamUser_EndAuthSession :: (self: *ISteamUser, steamID: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_CancelAuthTicket :: (self: *ISteamUser, hAuthTicket: HAuthTicket) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_UserHasLicenseForApp :: (self: *ISteamUser, steamID: uint64_steamid, appID: AppId_t) -> EUserHasLicenseForAppResult #foreign steam_api64;
+SteamAPI_ISteamUser_BIsBehindNAT :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_AdvertiseGame :: (self: *ISteamUser, steamIDGameServer: uint64_steamid, unIPServer: uint32, usPortServer: uint16) -> void #foreign steam_api64;
+SteamAPI_ISteamUser_RequestEncryptedAppTicket :: (self: *ISteamUser, pDataToInclude: *void, cbDataToInclude: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUser_GetEncryptedAppTicket :: (self: *ISteamUser, pTicket: *void, cbMaxTicket: s32, pcbTicket: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_GetGameBadgeLevel :: (self: *ISteamUser, nSeries: s32, bFoil: bool) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUser_GetPlayerSteamLevel :: (self: *ISteamUser) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUser_RequestStoreAuthURL :: (self: *ISteamUser, pchRedirectURL: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUser_BIsPhoneVerified :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_BIsTwoFactorEnabled :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_BIsPhoneIdentifying :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_BIsPhoneRequiringVerification :: (self: *ISteamUser) -> bool #foreign steam_api64;
+SteamAPI_ISteamUser_GetMarketEligibility :: (self: *ISteamUser) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUser_GetDurationControl :: (self: *ISteamUser) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUser_BSetDurationControlOnlineState :: (self: *ISteamUser, eNewState: EDurationControlOnlineState) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamFriends_v017 :: () -> *ISteamFriends #foreign steam_api64;
+
+SteamAPI_ISteamFriends_GetPersonaName :: (self: *ISteamFriends) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_SetPersonaName :: (self: *ISteamFriends, pchPersonaName: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_GetPersonaState :: (self: *ISteamFriends) -> EPersonaState #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendCount :: (self: *ISteamFriends, iFriendFlags: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendByIndex :: (self: *ISteamFriends, iFriend: s32, iFriendFlags: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendRelationship :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> EFriendRelationship #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendPersonaState :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> EPersonaState #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendPersonaName :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendGamePlayed :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, pFriendGameInfo: *FriendGameInfo_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendPersonaNameHistory :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, iPersonaName: s32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendSteamLevel :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetPlayerNickname :: (self: *ISteamFriends, steamIDPlayer: uint64_steamid) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendsGroupCount :: (self: *ISteamFriends) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendsGroupIDByIndex :: (self: *ISteamFriends, iFG: s32) -> FriendsGroupID_t #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendsGroupName :: (self: *ISteamFriends, friendsGroupID: FriendsGroupID_t) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendsGroupMembersCount :: (self: *ISteamFriends, friendsGroupID: FriendsGroupID_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendsGroupMembersList :: (self: *ISteamFriends, friendsGroupID: FriendsGroupID_t, pOutSteamIDMembers: *CSteamID, nMembersCount: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_HasFriend :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, iFriendFlags: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanCount :: (self: *ISteamFriends) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanByIndex :: (self: *ISteamFriends, iClan: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanName :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanTag :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanActivityCounts :: (self: *ISteamFriends, steamIDClan: uint64_steamid, pnOnline: *s32, pnInGame: *s32, pnChatting: *s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_DownloadClanActivityCounts :: (self: *ISteamFriends, psteamIDClans: *CSteamID, cClansToRequest: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendCountFromSource :: (self: *ISteamFriends, steamIDSource: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendFromSourceByIndex :: (self: *ISteamFriends, steamIDSource: uint64_steamid, iFriend: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_IsUserInSource :: (self: *ISteamFriends, steamIDUser: uint64_steamid, steamIDSource: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_SetInGameVoiceSpeaking :: (self: *ISteamFriends, steamIDUser: uint64_steamid, bSpeaking: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlay :: (self: *ISteamFriends, pchDialog: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayToUser :: (self: *ISteamFriends, pchDialog: *u8, steamID: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayToWebPage :: (self: *ISteamFriends, pchURL: *u8, eMode: EActivateGameOverlayToWebPageMode) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayToStore :: (self: *ISteamFriends, nAppID: AppId_t, eFlag: EOverlayToStoreFlag) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_SetPlayedWith :: (self: *ISteamFriends, steamIDUserPlayedWith: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayInviteDialog :: (self: *ISteamFriends, steamIDLobby: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_GetSmallFriendAvatar :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetMediumFriendAvatar :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetLargeFriendAvatar :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_RequestUserInformation :: (self: *ISteamFriends, steamIDUser: uint64_steamid, bRequireNameOnly: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_RequestClanOfficerList :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanOwner :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanOfficerCount :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanOfficerByIndex :: (self: *ISteamFriends, steamIDClan: uint64_steamid, iOfficer: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_GetUserRestrictions :: (self: *ISteamFriends) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamFriends_SetRichPresence :: (self: *ISteamFriends, pchKey: *u8, pchValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_ClearRichPresence :: (self: *ISteamFriends) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendRichPresence :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, pchKey: *u8) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendRichPresenceKeyCount :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendRichPresenceKeyByIndex :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, iKey: s32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_RequestFriendRichPresence :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_InviteUserToGame :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, pchConnectString: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetCoplayFriendCount :: (self: *ISteamFriends) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetCoplayFriend :: (self: *ISteamFriends, iCoplayFriend: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendCoplayTime :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendCoplayGame :: (self: *ISteamFriends, steamIDFriend: uint64_steamid) -> AppId_t #foreign steam_api64;
+SteamAPI_ISteamFriends_JoinClanChatRoom :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_LeaveClanChatRoom :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanChatMemberCount :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetChatMemberByIndex :: (self: *ISteamFriends, steamIDClan: uint64_steamid, iUser: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamFriends_SendClanChatMessage :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid, pchText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetClanChatMessage :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid, iMessage: s32, prgchText: *void, cchTextMax: s32, peChatEntryType: *EChatEntryType, psteamidChatter: *CSteamID) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_IsClanChatAdmin :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid, steamIDUser: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_IsClanChatWindowOpenInSteam :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_OpenClanChatWindowInSteam :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_CloseClanChatWindowInSteam :: (self: *ISteamFriends, steamIDClanChat: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_SetListenForFriendsMessages :: (self: *ISteamFriends, bInterceptEnabled: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_ReplyToFriendMessage :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, pchMsgToSend: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFriendMessage :: (self: *ISteamFriends, steamIDFriend: uint64_steamid, iMessageID: s32, pvData: *void, cubData: s32, peChatEntryType: *EChatEntryType) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetFollowerCount :: (self: *ISteamFriends, steamID: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_IsFollowing :: (self: *ISteamFriends, steamID: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_EnumerateFollowingList :: (self: *ISteamFriends, unStartIndex: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_IsClanPublic :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_IsClanOfficialGameGroup :: (self: *ISteamFriends, steamIDClan: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetNumChatsWithUnreadPriorityMessages :: (self: *ISteamFriends) -> s32 #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayRemotePlayTogetherInviteDialog :: (self: *ISteamFriends, steamIDLobby: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_RegisterProtocolInOverlayBrowser :: (self: *ISteamFriends, pchProtocol: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_ActivateGameOverlayInviteDialogConnectString :: (self: *ISteamFriends, pchConnectString: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamFriends_RequestEquippedProfileItems :: (self: *ISteamFriends, steamID: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamFriends_BHasEquippedProfileItem :: (self: *ISteamFriends, steamID: uint64_steamid, itemType: ECommunityProfileItemType) -> bool #foreign steam_api64;
+SteamAPI_ISteamFriends_GetProfileItemPropertyString :: (self: *ISteamFriends, steamID: uint64_steamid, itemType: ECommunityProfileItemType, prop: ECommunityProfileItemProperty) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamFriends_GetProfileItemPropertyUint :: (self: *ISteamFriends, steamID: uint64_steamid, itemType: ECommunityProfileItemType, prop: ECommunityProfileItemProperty) -> uint32 #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamUtils_v010 :: () -> *ISteamUtils #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerUtils_v010 :: () -> *ISteamUtils #foreign steam_api64;
+
+SteamAPI_ISteamUtils_GetSecondsSinceAppActive :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetSecondsSinceComputerActive :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetConnectedUniverse :: (self: *ISteamUtils) -> EUniverse #foreign steam_api64;
+SteamAPI_ISteamUtils_GetServerRealTime :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetIPCountry :: (self: *ISteamUtils) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetImageSize :: (self: *ISteamUtils, iImage: s32, pnWidth: *uint32, pnHeight: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetImageRGBA :: (self: *ISteamUtils, iImage: s32, pubDest: *uint8, nDestBufferSize: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetCurrentBatteryPower :: (self: *ISteamUtils) -> uint8 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetAppID :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_SetOverlayNotificationPosition :: (self: *ISteamUtils, eNotificationPosition: ENotificationPosition) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_IsAPICallCompleted :: (self: *ISteamUtils, hSteamAPICall: SteamAPICall_t, pbFailed: *bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetAPICallFailureReason :: (self: *ISteamUtils, hSteamAPICall: SteamAPICall_t) -> ESteamAPICallFailure #foreign steam_api64;
+SteamAPI_ISteamUtils_GetAPICallResult :: (self: *ISteamUtils, hSteamAPICall: SteamAPICall_t, pCallback: *void, cubCallback: s32, iCallbackExpected: s32, pbFailed: *bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetIPCCallCount :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_SetWarningMessageHook :: (self: *ISteamUtils, pFunction: SteamAPIWarningMessageHook_t) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_IsOverlayEnabled :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_BOverlayNeedsPresent :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_CheckFileSignature :: (self: *ISteamUtils, szFileName: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUtils_ShowGamepadTextInput :: (self: *ISteamUtils, eInputMode: EGamepadTextInputMode, eLineInputMode: EGamepadTextInputLineMode, pchDescription: *u8, unCharMax: uint32, pchExistingText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetEnteredGamepadTextLength :: (self: *ISteamUtils) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetEnteredGamepadTextInput :: (self: *ISteamUtils, pchText: *u8, cchText: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_GetSteamUILanguage :: (self: *ISteamUtils) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamUtils_IsSteamRunningInVR :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_SetOverlayNotificationInset :: (self: *ISteamUtils, nHorizontalInset: s32, nVerticalInset: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_IsSteamInBigPictureMode :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_StartVRDashboard :: (self: *ISteamUtils) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_IsVRHeadsetStreamingEnabled :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_SetVRHeadsetStreamingEnabled :: (self: *ISteamUtils, bEnabled: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_IsSteamChinaLauncher :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_InitFilterText :: (self: *ISteamUtils, unFilterOptions: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_FilterText :: (self: *ISteamUtils, eContext: ETextFilteringContext, sourceSteamID: uint64_steamid, pchInputMessage: *u8, pchOutFilteredText: *u8, nByteSizeOutFilteredText: uint32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUtils_GetIPv6ConnectivityState :: (self: *ISteamUtils, eProtocol: ESteamIPv6ConnectivityProtocol) -> ESteamIPv6ConnectivityState #foreign steam_api64;
+SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_ShowFloatingGamepadTextInput :: (self: *ISteamUtils, eKeyboardMode: EFloatingGamepadTextInputMode, nTextFieldXPosition: s32, nTextFieldYPosition: s32, nTextFieldWidth: s32, nTextFieldHeight: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_SetGameLauncherMode :: (self: *ISteamUtils, bLauncherMode: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamUtils_DismissFloatingGamepadTextInput :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+SteamAPI_ISteamUtils_DismissGamepadTextInput :: (self: *ISteamUtils) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamMatchmaking_v009 :: () -> *ISteamMatchmaking #foreign steam_api64;
+
+SteamAPI_ISteamMatchmaking_GetFavoriteGameCount :: (self: *ISteamMatchmaking) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetFavoriteGame :: (self: *ISteamMatchmaking, iGame: s32, pnAppID: *AppId_t, pnIP: *uint32, pnConnPort: *uint16, pnQueryPort: *uint16, punFlags: *uint32, pRTime32LastPlayedOnServer: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddFavoriteGame :: (self: *ISteamMatchmaking, nAppID: AppId_t, nIP: uint32, nConnPort: uint16, nQueryPort: uint16, unFlags: uint32, rTime32LastPlayedOnServer: uint32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_RemoveFavoriteGame :: (self: *ISteamMatchmaking, nAppID: AppId_t, nIP: uint32, nConnPort: uint16, nQueryPort: uint16, unFlags: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_RequestLobbyList :: (self: *ISteamMatchmaking) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListStringFilter :: (self: *ISteamMatchmaking, pchKeyToMatch: *u8, pchValueToMatch: *u8, eComparisonType: ELobbyComparison) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListNumericalFilter :: (self: *ISteamMatchmaking, pchKeyToMatch: *u8, nValueToMatch: s32, eComparisonType: ELobbyComparison) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListNearValueFilter :: (self: *ISteamMatchmaking, pchKeyToMatch: *u8, nValueToBeCloseTo: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListFilterSlotsAvailable :: (self: *ISteamMatchmaking, nSlotsAvailable: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListDistanceFilter :: (self: *ISteamMatchmaking, eLobbyDistanceFilter: ELobbyDistanceFilter) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListResultCountFilter :: (self: *ISteamMatchmaking, cMaxResults: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_AddRequestLobbyListCompatibleMembersFilter :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyByIndex :: (self: *ISteamMatchmaking, iLobby: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_CreateLobby :: (self: *ISteamMatchmaking, eLobbyType: ELobbyType, cMaxMembers: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_JoinLobby :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_LeaveLobby :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_InviteUserToLobby :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, steamIDInvitee: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetNumLobbyMembers :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyMemberByIndex :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, iMember: s32) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, pchKey: *u8) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, pchKey: *u8, pchValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyDataCount :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyDataByIndex :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, iLobbyData: s32, pchKey: *u8, cchKeyBufferSize: s32, pchValue: *u8, cchValueBufferSize: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_DeleteLobbyData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, pchKey: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyMemberData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, steamIDUser: uint64_steamid, pchKey: *u8) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyMemberData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, pchKey: *u8, pchValue: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SendLobbyChatMsg :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, pvMsgBody: *void, cubMsgBody: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyChatEntry :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, iChatID: s32, pSteamIDUser: *CSteamID, pvData: *void, cubData: s32, peChatEntryType: *EChatEntryType) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_RequestLobbyData :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyGameServer :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, unGameServerIP: uint32, unGameServerPort: uint16, steamIDGameServer: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyGameServer :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, punGameServerIP: *uint32, punGameServerPort: *uint16, psteamIDGameServer: *CSteamID) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyMemberLimit :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, cMaxMembers: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyMemberLimit :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyType :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, eLobbyType: ELobbyType) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyJoinable :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, bLobbyJoinable: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_GetLobbyOwner :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLobbyOwner :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, steamIDNewOwner: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmaking_SetLinkedLobby :: (self: *ISteamMatchmaking, steamIDLobby: uint64_steamid, steamIDLobbyDependent: uint64_steamid) -> bool #foreign steam_api64;
+
+// ISteamMatchmakingServerListResponse
+SteamAPI_ISteamMatchmakingServerListResponse_ServerResponded :: (self: *ISteamMatchmakingServerListResponse, hRequest: HServerListRequest, iServer: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServerListResponse_ServerFailedToRespond :: (self: *ISteamMatchmakingServerListResponse, hRequest: HServerListRequest, iServer: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServerListResponse_RefreshComplete :: (self: *ISteamMatchmakingServerListResponse, hRequest: HServerListRequest, response: EMatchMakingServerResponse) -> void #foreign steam_api64;
+
+// ISteamMatchmakingPingResponse
+SteamAPI_ISteamMatchmakingPingResponse_ServerResponded :: (self: *ISteamMatchmakingPingResponse, server: *gameserveritem_t) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingPingResponse_ServerFailedToRespond :: (self: *ISteamMatchmakingPingResponse) -> void #foreign steam_api64;
+
+// ISteamMatchmakingPlayersResponse
+SteamAPI_ISteamMatchmakingPlayersResponse_AddPlayerToList :: (self: *ISteamMatchmakingPlayersResponse, pchName: *u8, nScore: s32, flTimePlayed: float) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingPlayersResponse_PlayersFailedToRespond :: (self: *ISteamMatchmakingPlayersResponse) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingPlayersResponse_PlayersRefreshComplete :: (self: *ISteamMatchmakingPlayersResponse) -> void #foreign steam_api64;
+
+// ISteamMatchmakingRulesResponse
+SteamAPI_ISteamMatchmakingRulesResponse_RulesResponded :: (self: *ISteamMatchmakingRulesResponse, pchRule: *u8, pchValue: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingRulesResponse_RulesFailedToRespond :: (self: *ISteamMatchmakingRulesResponse) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingRulesResponse_RulesRefreshComplete :: (self: *ISteamMatchmakingRulesResponse) -> void #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamMatchmakingServers_v002 :: () -> *ISteamMatchmakingServers #foreign steam_api64;
+
+SteamAPI_ISteamMatchmakingServers_RequestInternetServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, ppchFilters: **MatchMakingKeyValuePair_t, nFilters: uint32, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RequestLANServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RequestFriendsServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, ppchFilters: **MatchMakingKeyValuePair_t, nFilters: uint32, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RequestFavoritesServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, ppchFilters: **MatchMakingKeyValuePair_t, nFilters: uint32, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RequestHistoryServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, ppchFilters: **MatchMakingKeyValuePair_t, nFilters: uint32, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RequestSpectatorServerList :: (self: *ISteamMatchmakingServers, iApp: AppId_t, ppchFilters: **MatchMakingKeyValuePair_t, nFilters: uint32, pRequestServersResponse: *ISteamMatchmakingServerListResponse) -> HServerListRequest #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_ReleaseRequest :: (self: *ISteamMatchmakingServers, hServerListRequest: HServerListRequest) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_GetServerDetails :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest, iServer: s32) -> *gameserveritem_t #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_CancelQuery :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RefreshQuery :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_IsRefreshing :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest) -> bool #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_GetServerCount :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest) -> s32 #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_RefreshServer :: (self: *ISteamMatchmakingServers, hRequest: HServerListRequest, iServer: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_PingServer :: (self: *ISteamMatchmakingServers, unIP: uint32, usPort: uint16, pRequestServersResponse: *ISteamMatchmakingPingResponse) -> HServerQuery #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_PlayerDetails :: (self: *ISteamMatchmakingServers, unIP: uint32, usPort: uint16, pRequestServersResponse: *ISteamMatchmakingPlayersResponse) -> HServerQuery #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_ServerRules :: (self: *ISteamMatchmakingServers, unIP: uint32, usPort: uint16, pRequestServersResponse: *ISteamMatchmakingRulesResponse) -> HServerQuery #foreign steam_api64;
+SteamAPI_ISteamMatchmakingServers_CancelServerQuery :: (self: *ISteamMatchmakingServers, hServerQuery: HServerQuery) -> void #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameSearch_v001 :: () -> *ISteamGameSearch #foreign steam_api64;
+
+SteamAPI_ISteamGameSearch_AddGameSearchParams :: (self: *ISteamGameSearch, pchKeyToFind: *u8, pchValuesToFind: *u8) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_SearchForGameWithLobby :: (self: *ISteamGameSearch, steamIDLobby: uint64_steamid, nPlayerMin: s32, nPlayerMax: s32) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_SearchForGameSolo :: (self: *ISteamGameSearch, nPlayerMin: s32, nPlayerMax: s32) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_AcceptGame :: (self: *ISteamGameSearch) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_DeclineGame :: (self: *ISteamGameSearch) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_RetrieveConnectionDetails :: (self: *ISteamGameSearch, steamIDHost: uint64_steamid, pchConnectionDetails: *u8, cubConnectionDetails: s32) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_EndGameSearch :: (self: *ISteamGameSearch) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_SetGameHostParams :: (self: *ISteamGameSearch, pchKey: *u8, pchValue: *u8) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_SetConnectionDetails :: (self: *ISteamGameSearch, pchConnectionDetails: *u8, cubConnectionDetails: s32) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_RequestPlayersForGame :: (self: *ISteamGameSearch, nPlayerMin: s32, nPlayerMax: s32, nMaxTeamSize: s32) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_HostConfirmGameStart :: (self: *ISteamGameSearch, ullUniqueGameID: uint64) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_CancelRequestPlayersForGame :: (self: *ISteamGameSearch) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_SubmitPlayerResult :: (self: *ISteamGameSearch, ullUniqueGameID: uint64, steamIDPlayer: uint64_steamid, EPlayerResult: EPlayerResult_t) -> EGameSearchErrorCode_t #foreign steam_api64;
+SteamAPI_ISteamGameSearch_EndGame :: (self: *ISteamGameSearch, ullUniqueGameID: uint64) -> EGameSearchErrorCode_t #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamParties_v002 :: () -> *ISteamParties #foreign steam_api64;
+
+SteamAPI_ISteamParties_GetNumActiveBeacons :: (self: *ISteamParties) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamParties_GetBeaconByIndex :: (self: *ISteamParties, unIndex: uint32) -> PartyBeaconID_t #foreign steam_api64;
+SteamAPI_ISteamParties_GetBeaconDetails :: (self: *ISteamParties, ulBeaconID: PartyBeaconID_t, pSteamIDBeaconOwner: *CSteamID, pLocation: *SteamPartyBeaconLocation_t, pchMetadata: *u8, cchMetadata: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamParties_JoinParty :: (self: *ISteamParties, ulBeaconID: PartyBeaconID_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamParties_GetNumAvailableBeaconLocations :: (self: *ISteamParties, puNumLocations: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamParties_GetAvailableBeaconLocations :: (self: *ISteamParties, pLocationList: *SteamPartyBeaconLocation_t, uMaxNumLocations: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamParties_CreateBeacon :: (self: *ISteamParties, unOpenSlots: uint32, pBeaconLocation: *SteamPartyBeaconLocation_t, pchConnectString: *u8, pchMetadata: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamParties_OnReservationCompleted :: (self: *ISteamParties, ulBeacon: PartyBeaconID_t, steamIDUser: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamParties_CancelReservation :: (self: *ISteamParties, ulBeacon: PartyBeaconID_t, steamIDUser: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamParties_ChangeNumOpenSlots :: (self: *ISteamParties, ulBeacon: PartyBeaconID_t, unOpenSlots: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamParties_DestroyBeacon :: (self: *ISteamParties, ulBeacon: PartyBeaconID_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamParties_GetBeaconLocationData :: (self: *ISteamParties, BeaconLocation: SteamPartyBeaconLocation_t, eData: ESteamPartyBeaconLocationData, pchDataStringOut: *u8, cchDataStringOut: s32) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamRemoteStorage_v016 :: () -> *ISteamRemoteStorage #foreign steam_api64;
+
+SteamAPI_ISteamRemoteStorage_FileWrite :: (self: *ISteamRemoteStorage, pchFile: *u8, pvData: *void, cubData: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileRead :: (self: *ISteamRemoteStorage, pchFile: *u8, pvData: *void, cubDataToRead: int32) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileWriteAsync :: (self: *ISteamRemoteStorage, pchFile: *u8, pvData: *void, cubData: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileReadAsync :: (self: *ISteamRemoteStorage, pchFile: *u8, nOffset: uint32, cubToRead: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileReadAsyncComplete :: (self: *ISteamRemoteStorage, hReadCall: SteamAPICall_t, pvBuffer: *void, cubToRead: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileForget :: (self: *ISteamRemoteStorage, pchFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileDelete :: (self: *ISteamRemoteStorage, pchFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileShare :: (self: *ISteamRemoteStorage, pchFile: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_SetSyncPlatforms :: (self: *ISteamRemoteStorage, pchFile: *u8, eRemoteStoragePlatform: ERemoteStoragePlatform) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileWriteStreamOpen :: (self: *ISteamRemoteStorage, pchFile: *u8) -> UGCFileWriteStreamHandle_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileWriteStreamWriteChunk :: (self: *ISteamRemoteStorage, writeHandle: UGCFileWriteStreamHandle_t, pvData: *void, cubData: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileWriteStreamClose :: (self: *ISteamRemoteStorage, writeHandle: UGCFileWriteStreamHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileWriteStreamCancel :: (self: *ISteamRemoteStorage, writeHandle: UGCFileWriteStreamHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FileExists :: (self: *ISteamRemoteStorage, pchFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_FilePersisted :: (self: *ISteamRemoteStorage, pchFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetFileSize :: (self: *ISteamRemoteStorage, pchFile: *u8) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetFileTimestamp :: (self: *ISteamRemoteStorage, pchFile: *u8) -> int64 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetSyncPlatforms :: (self: *ISteamRemoteStorage, pchFile: *u8) -> ERemoteStoragePlatform #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetFileCount :: (self: *ISteamRemoteStorage) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetFileNameAndSize :: (self: *ISteamRemoteStorage, iFile: s32, pnFileSizeInBytes: *int32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetQuota :: (self: *ISteamRemoteStorage, pnTotalBytes: *uint64, puAvailableBytes: *uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_IsCloudEnabledForAccount :: (self: *ISteamRemoteStorage) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_IsCloudEnabledForApp :: (self: *ISteamRemoteStorage) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_SetCloudEnabledForApp :: (self: *ISteamRemoteStorage, bEnabled: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UGCDownload :: (self: *ISteamRemoteStorage, hContent: UGCHandle_t, unPriority: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetUGCDownloadProgress :: (self: *ISteamRemoteStorage, hContent: UGCHandle_t, pnBytesDownloaded: *int32, pnBytesExpected: *int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetUGCDetails :: (self: *ISteamRemoteStorage, hContent: UGCHandle_t, pnAppID: *AppId_t, ppchName: **u8, pnFileSizeInBytes: *int32, pSteamIDOwner: *CSteamID) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UGCRead :: (self: *ISteamRemoteStorage, hContent: UGCHandle_t, pvData: *void, cubDataToRead: int32, cOffset: uint32, eAction: EUGCReadAction) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetCachedUGCCount :: (self: *ISteamRemoteStorage) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetCachedUGCHandle :: (self: *ISteamRemoteStorage, iCachedContent: int32) -> UGCHandle_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_PublishWorkshopFile :: (self: *ISteamRemoteStorage, pchFile: *u8, pchPreviewFile: *u8, nConsumerAppId: AppId_t, pchTitle: *u8, pchDescription: *u8, eVisibility: ERemoteStoragePublishedFileVisibility, pTags: *SteamParamStringArray_t, eWorkshopFileType: EWorkshopFileType) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_CreatePublishedFileUpdateRequest :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> PublishedFileUpdateHandle_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileFile :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pchFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFilePreviewFile :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pchPreviewFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileTitle :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pchTitle: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileDescription :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pchDescription: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileVisibility :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, eVisibility: ERemoteStoragePublishedFileVisibility) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileTags :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pTags: *SteamParamStringArray_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_CommitPublishedFileUpdate :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetPublishedFileDetails :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t, unMaxSecondsOld: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_DeletePublishedFile :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EnumerateUserPublishedFiles :: (self: *ISteamRemoteStorage, unStartIndex: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_SubscribePublishedFile :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EnumerateUserSubscribedFiles :: (self: *ISteamRemoteStorage, unStartIndex: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UnsubscribePublishedFile :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdatePublishedFileSetChangeDescription :: (self: *ISteamRemoteStorage, updateHandle: PublishedFileUpdateHandle_t, pchChangeDescription: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetPublishedItemVoteDetails :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UpdateUserPublishedItemVote :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t, bVoteUp: bool) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetUserPublishedItemVoteDetails :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EnumerateUserSharedWorkshopFiles :: (self: *ISteamRemoteStorage, steamId: uint64_steamid, unStartIndex: uint32, pRequiredTags: *SteamParamStringArray_t, pExcludedTags: *SteamParamStringArray_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_PublishVideo :: (self: *ISteamRemoteStorage, eVideoProvider: EWorkshopVideoProvider, pchVideoAccount: *u8, pchVideoIdentifier: *u8, pchPreviewFile: *u8, nConsumerAppId: AppId_t, pchTitle: *u8, pchDescription: *u8, eVisibility: ERemoteStoragePublishedFileVisibility, pTags: *SteamParamStringArray_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_SetUserPublishedFileAction :: (self: *ISteamRemoteStorage, unPublishedFileId: PublishedFileId_t, eAction: EWorkshopFileAction) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EnumeratePublishedFilesByUserAction :: (self: *ISteamRemoteStorage, eAction: EWorkshopFileAction, unStartIndex: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EnumeratePublishedWorkshopFiles :: (self: *ISteamRemoteStorage, eEnumerationType: EWorkshopEnumerationType, unStartIndex: uint32, unCount: uint32, unDays: uint32, pTags: *SteamParamStringArray_t, pUserTags: *SteamParamStringArray_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_UGCDownloadToLocation :: (self: *ISteamRemoteStorage, hContent: UGCHandle_t, pchLocation: *u8, unPriority: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetLocalFileChangeCount :: (self: *ISteamRemoteStorage) -> int32 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_GetLocalFileChange :: (self: *ISteamRemoteStorage, iFile: s32, pEChangeType: *ERemoteStorageLocalFileChange, pEFilePathType: *ERemoteStorageFilePathType) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_BeginFileWriteBatch :: (self: *ISteamRemoteStorage) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemoteStorage_EndFileWriteBatch :: (self: *ISteamRemoteStorage) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamUserStats_v012 :: () -> *ISteamUserStats #foreign steam_api64;
+
+SteamAPI_ISteamUserStats_RequestCurrentStats :: (self: *ISteamUserStats) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetStatInt32 :: (self: *ISteamUserStats, pchName: *u8, pData: *int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetStatFloat :: (self: *ISteamUserStats, pchName: *u8, pData: *float) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_SetStatInt32 :: (self: *ISteamUserStats, pchName: *u8, nData: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_SetStatFloat :: (self: *ISteamUserStats, pchName: *u8, fData: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_UpdateAvgRateStat :: (self: *ISteamUserStats, pchName: *u8, flCountThisSession: float, dSessionLength: float64) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievement :: (self: *ISteamUserStats, pchName: *u8, pbAchieved: *bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_SetAchievement :: (self: *ISteamUserStats, pchName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_ClearAchievement :: (self: *ISteamUserStats, pchName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementAndUnlockTime :: (self: *ISteamUserStats, pchName: *u8, pbAchieved: *bool, punUnlockTime: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_StoreStats :: (self: *ISteamUserStats) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementIcon :: (self: *ISteamUserStats, pchName: *u8) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementDisplayAttribute :: (self: *ISteamUserStats, pchName: *u8, pchKey: *u8) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamUserStats_IndicateAchievementProgress :: (self: *ISteamUserStats, pchName: *u8, nCurProgress: uint32, nMaxProgress: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetNumAchievements :: (self: *ISteamUserStats) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementName :: (self: *ISteamUserStats, iAchievement: uint32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamUserStats_RequestUserStats :: (self: *ISteamUserStats, steamIDUser: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetUserStatInt32 :: (self: *ISteamUserStats, steamIDUser: uint64_steamid, pchName: *u8, pData: *int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetUserStatFloat :: (self: *ISteamUserStats, steamIDUser: uint64_steamid, pchName: *u8, pData: *float) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetUserAchievement :: (self: *ISteamUserStats, steamIDUser: uint64_steamid, pchName: *u8, pbAchieved: *bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetUserAchievementAndUnlockTime :: (self: *ISteamUserStats, steamIDUser: uint64_steamid, pchName: *u8, pbAchieved: *bool, punUnlockTime: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_ResetAllStats :: (self: *ISteamUserStats, bAchievementsToo: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_FindOrCreateLeaderboard :: (self: *ISteamUserStats, pchLeaderboardName: *u8, eLeaderboardSortMethod: ELeaderboardSortMethod, eLeaderboardDisplayType: ELeaderboardDisplayType) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_FindLeaderboard :: (self: *ISteamUserStats, pchLeaderboardName: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetLeaderboardName :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetLeaderboardEntryCount :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetLeaderboardSortMethod :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t) -> ELeaderboardSortMethod #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetLeaderboardDisplayType :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t) -> ELeaderboardDisplayType #foreign steam_api64;
+SteamAPI_ISteamUserStats_DownloadLeaderboardEntries :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t, eLeaderboardDataRequest: ELeaderboardDataRequest, nRangeStart: s32, nRangeEnd: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_DownloadLeaderboardEntriesForUsers :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t, prgUsers: *CSteamID, cUsers: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetDownloadedLeaderboardEntry :: (self: *ISteamUserStats, hSteamLeaderboardEntries: SteamLeaderboardEntries_t, index: s32, pLeaderboardEntry: *LeaderboardEntry_t, pDetails: *int32, cDetailsMax: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_UploadLeaderboardScore :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t, eLeaderboardUploadScoreMethod: ELeaderboardUploadScoreMethod, nScore: int32, pScoreDetails: *int32, cScoreDetailsCount: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_AttachLeaderboardUGC :: (self: *ISteamUserStats, hSteamLeaderboard: SteamLeaderboard_t, hUGC: UGCHandle_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetNumberOfCurrentPlayers :: (self: *ISteamUserStats) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_RequestGlobalAchievementPercentages :: (self: *ISteamUserStats) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetMostAchievedAchievementInfo :: (self: *ISteamUserStats, pchName: *u8, unNameBufLen: uint32, pflPercent: *float, pbAchieved: *bool) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetNextMostAchievedAchievementInfo :: (self: *ISteamUserStats, iIteratorPrevious: s32, pchName: *u8, unNameBufLen: uint32, pflPercent: *float, pbAchieved: *bool) -> s32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementAchievedPercent :: (self: *ISteamUserStats, pchName: *u8, pflPercent: *float) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_RequestGlobalStats :: (self: *ISteamUserStats, nHistoryDays: s32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetGlobalStatInt64 :: (self: *ISteamUserStats, pchStatName: *u8, pData: *int64) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetGlobalStatDouble :: (self: *ISteamUserStats, pchStatName: *u8, pData: *float64) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetGlobalStatHistoryInt64 :: (self: *ISteamUserStats, pchStatName: *u8, pData: *int64, cubData: uint32) -> int32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetGlobalStatHistoryDouble :: (self: *ISteamUserStats, pchStatName: *u8, pData: *float64, cubData: uint32) -> int32 #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementProgressLimitsInt32 :: (self: *ISteamUserStats, pchName: *u8, pnMinProgress: *int32, pnMaxProgress: *int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUserStats_GetAchievementProgressLimitsFloat :: (self: *ISteamUserStats, pchName: *u8, pfMinProgress: *float, pfMaxProgress: *float) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamApps_v008 :: () -> *ISteamApps #foreign steam_api64;
+
+SteamAPI_ISteamApps_BIsSubscribed :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_BIsLowViolence :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_BIsCybercafe :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_BIsVACBanned :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetCurrentGameLanguage :: (self: *ISteamApps) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamApps_GetAvailableGameLanguages :: (self: *ISteamApps) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamApps_BIsSubscribedApp :: (self: *ISteamApps, appID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_BIsDlcInstalled :: (self: *ISteamApps, appID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetEarliestPurchaseUnixTime :: (self: *ISteamApps, nAppID: AppId_t) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamApps_BIsSubscribedFromFreeWeekend :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetDLCCount :: (self: *ISteamApps) -> s32 #foreign steam_api64;
+SteamAPI_ISteamApps_BGetDLCDataByIndex :: (self: *ISteamApps, iDLC: s32, pAppID: *AppId_t, pbAvailable: *bool, pchName: *u8, cchNameBufferSize: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_InstallDLC :: (self: *ISteamApps, nAppID: AppId_t) -> void #foreign steam_api64;
+SteamAPI_ISteamApps_UninstallDLC :: (self: *ISteamApps, nAppID: AppId_t) -> void #foreign steam_api64;
+SteamAPI_ISteamApps_RequestAppProofOfPurchaseKey :: (self: *ISteamApps, nAppID: AppId_t) -> void #foreign steam_api64;
+SteamAPI_ISteamApps_GetCurrentBetaName :: (self: *ISteamApps, pchName: *u8, cchNameBufferSize: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_MarkContentCorrupt :: (self: *ISteamApps, bMissingFilesOnly: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetInstalledDepots :: (self: *ISteamApps, appID: AppId_t, pvecDepots: *DepotId_t, cMaxDepots: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamApps_GetAppInstallDir :: (self: *ISteamApps, appID: AppId_t, pchFolder: *u8, cchFolderBufferSize: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamApps_BIsAppInstalled :: (self: *ISteamApps, appID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetAppOwner :: (self: *ISteamApps) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamApps_GetLaunchQueryParam :: (self: *ISteamApps, pchKey: *u8) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamApps_GetDlcDownloadProgress :: (self: *ISteamApps, nAppID: AppId_t, punBytesDownloaded: *uint64, punBytesTotal: *uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetAppBuildId :: (self: *ISteamApps) -> s32 #foreign steam_api64;
+SteamAPI_ISteamApps_RequestAllProofOfPurchaseKeys :: (self: *ISteamApps) -> void #foreign steam_api64;
+SteamAPI_ISteamApps_GetFileDetails :: (self: *ISteamApps, pszFileName: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamApps_GetLaunchCommandLine :: (self: *ISteamApps, pszCommandLine: *u8, cubCommandLine: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing :: (self: *ISteamApps) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_BIsTimedTrial :: (self: *ISteamApps, punSecondsAllowed: *uint32, punSecondsPlayed: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_SetDlcContext :: (self: *ISteamApps, nAppID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_GetNumBetas :: (self: *ISteamApps, unAppID: AppId_t, pnAvailable: *s32, pnPrivate: *s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamApps_GetBetaInfo :: (self: *ISteamApps, unAppID: AppId_t, iBetaIndex: s32, punFlags: *uint32, punBuildID: *uint32, pchBetaName: *u8, cchBetaName: s32, pchDescription: *u8, cchDescription: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamApps_SetActiveBeta :: (self: *ISteamApps, unAppID: AppId_t, pchBetaName: *u8) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamNetworking_v006 :: () -> *ISteamNetworking #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerNetworking_v006 :: () -> *ISteamNetworking #foreign steam_api64;
+
+SteamAPI_ISteamNetworking_SendP2PPacket :: (self: *ISteamNetworking, steamIDRemote: uint64_steamid, pubData: *void, cubData: uint32, eP2PSendType: EP2PSend, nChannel: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_IsP2PPacketAvailable :: (self: *ISteamNetworking, pcubMsgSize: *uint32, nChannel: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_ReadP2PPacket :: (self: *ISteamNetworking, pubDest: *void, cubDest: uint32, pcubMsgSize: *uint32, psteamIDRemote: *CSteamID, nChannel: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_AcceptP2PSessionWithUser :: (self: *ISteamNetworking, steamIDRemote: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_CloseP2PSessionWithUser :: (self: *ISteamNetworking, steamIDRemote: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_CloseP2PChannelWithUser :: (self: *ISteamNetworking, steamIDRemote: uint64_steamid, nChannel: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_GetP2PSessionState :: (self: *ISteamNetworking, steamIDRemote: uint64_steamid, pConnectionState: *P2PSessionState_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_AllowP2PPacketRelay :: (self: *ISteamNetworking, bAllow: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_CreateListenSocket :: (self: *ISteamNetworking, nVirtualP2PPort: s32, nIP: SteamIPAddress_t, nPort: uint16, bAllowUseOfPacketRelay: bool) -> SNetListenSocket_t #foreign steam_api64;
+SteamAPI_ISteamNetworking_CreateP2PConnectionSocket :: (self: *ISteamNetworking, steamIDTarget: uint64_steamid, nVirtualPort: s32, nTimeoutSec: s32, bAllowUseOfPacketRelay: bool) -> SNetSocket_t #foreign steam_api64;
+SteamAPI_ISteamNetworking_CreateConnectionSocket :: (self: *ISteamNetworking, nIP: SteamIPAddress_t, nPort: uint16, nTimeoutSec: s32) -> SNetSocket_t #foreign steam_api64;
+SteamAPI_ISteamNetworking_DestroySocket :: (self: *ISteamNetworking, hSocket: SNetSocket_t, bNotifyRemoteEnd: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_DestroyListenSocket :: (self: *ISteamNetworking, hSocket: SNetListenSocket_t, bNotifyRemoteEnd: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_SendDataOnSocket :: (self: *ISteamNetworking, hSocket: SNetSocket_t, pubData: *void, cubData: uint32, bReliable: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_IsDataAvailableOnSocket :: (self: *ISteamNetworking, hSocket: SNetSocket_t, pcubMsgSize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_RetrieveDataFromSocket :: (self: *ISteamNetworking, hSocket: SNetSocket_t, pubDest: *void, cubDest: uint32, pcubMsgSize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_IsDataAvailable :: (self: *ISteamNetworking, hListenSocket: SNetListenSocket_t, pcubMsgSize: *uint32, phSocket: *SNetSocket_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_RetrieveData :: (self: *ISteamNetworking, hListenSocket: SNetListenSocket_t, pubDest: *void, cubDest: uint32, pcubMsgSize: *uint32, phSocket: *SNetSocket_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_GetSocketInfo :: (self: *ISteamNetworking, hSocket: SNetSocket_t, pSteamIDRemote: *CSteamID, peSocketStatus: *s32, punIPRemote: *SteamIPAddress_t, punPortRemote: *uint16) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_GetListenSocketInfo :: (self: *ISteamNetworking, hListenSocket: SNetListenSocket_t, pnIP: *SteamIPAddress_t, pnPort: *uint16) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworking_GetSocketConnectionType :: (self: *ISteamNetworking, hSocket: SNetSocket_t) -> ESNetSocketConnectionType #foreign steam_api64;
+SteamAPI_ISteamNetworking_GetMaxPacketSize :: (self: *ISteamNetworking, hSocket: SNetSocket_t) -> s32 #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamScreenshots_v003 :: () -> *ISteamScreenshots #foreign steam_api64;
+
+SteamAPI_ISteamScreenshots_WriteScreenshot :: (self: *ISteamScreenshots, pubRGB: *void, cubRGB: uint32, nWidth: s32, nHeight: s32) -> ScreenshotHandle #foreign steam_api64;
+SteamAPI_ISteamScreenshots_AddScreenshotToLibrary :: (self: *ISteamScreenshots, pchFilename: *u8, pchThumbnailFilename: *u8, nWidth: s32, nHeight: s32) -> ScreenshotHandle #foreign steam_api64;
+SteamAPI_ISteamScreenshots_TriggerScreenshot :: (self: *ISteamScreenshots) -> void #foreign steam_api64;
+SteamAPI_ISteamScreenshots_HookScreenshots :: (self: *ISteamScreenshots, bHook: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamScreenshots_SetLocation :: (self: *ISteamScreenshots, hScreenshot: ScreenshotHandle, pchLocation: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamScreenshots_TagUser :: (self: *ISteamScreenshots, hScreenshot: ScreenshotHandle, steamID: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamScreenshots_TagPublishedFile :: (self: *ISteamScreenshots, hScreenshot: ScreenshotHandle, unPublishedFileID: PublishedFileId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamScreenshots_IsScreenshotsHooked :: (self: *ISteamScreenshots) -> bool #foreign steam_api64;
+SteamAPI_ISteamScreenshots_AddVRScreenshotToLibrary :: (self: *ISteamScreenshots, eType: EVRScreenshotType, pchFilename: *u8, pchVRFilename: *u8) -> ScreenshotHandle #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamMusic_v001 :: () -> *ISteamMusic #foreign steam_api64;
+
+SteamAPI_ISteamMusic_BIsEnabled :: (self: *ISteamMusic) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusic_BIsPlaying :: (self: *ISteamMusic) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusic_GetPlaybackStatus :: (self: *ISteamMusic) -> AudioPlayback_Status #foreign steam_api64;
+SteamAPI_ISteamMusic_Play :: (self: *ISteamMusic) -> void #foreign steam_api64;
+SteamAPI_ISteamMusic_Pause :: (self: *ISteamMusic) -> void #foreign steam_api64;
+SteamAPI_ISteamMusic_PlayPrevious :: (self: *ISteamMusic) -> void #foreign steam_api64;
+SteamAPI_ISteamMusic_PlayNext :: (self: *ISteamMusic) -> void #foreign steam_api64;
+SteamAPI_ISteamMusic_SetVolume :: (self: *ISteamMusic, flVolume: float) -> void #foreign steam_api64;
+SteamAPI_ISteamMusic_GetVolume :: (self: *ISteamMusic) -> float #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamMusicRemote_v001 :: () -> *ISteamMusicRemote #foreign steam_api64;
+
+SteamAPI_ISteamMusicRemote_RegisterSteamMusicRemote :: (self: *ISteamMusicRemote, pchName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_DeregisterSteamMusicRemote :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_BIsCurrentMusicRemote :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_BActivationSuccess :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetDisplayName :: (self: *ISteamMusicRemote, pchDisplayName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetPNGIcon_64x64 :: (self: *ISteamMusicRemote, pvBuffer: *void, cbBufferLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnablePlayPrevious :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnablePlayNext :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnableShuffled :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnableLooped :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnableQueue :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_EnablePlaylists :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdatePlaybackStatus :: (self: *ISteamMusicRemote, nStatus: AudioPlayback_Status) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateShuffled :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateLooped :: (self: *ISteamMusicRemote, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateVolume :: (self: *ISteamMusicRemote, flValue: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_CurrentEntryWillChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_CurrentEntryIsAvailable :: (self: *ISteamMusicRemote, bAvailable: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateCurrentEntryText :: (self: *ISteamMusicRemote, pchText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateCurrentEntryElapsedSeconds :: (self: *ISteamMusicRemote, nValue: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_UpdateCurrentEntryCoverArt :: (self: *ISteamMusicRemote, pvBuffer: *void, cbBufferLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_CurrentEntryDidChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_QueueWillChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_ResetQueueEntries :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetQueueEntry :: (self: *ISteamMusicRemote, nID: s32, nPosition: s32, pchEntryText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetCurrentQueueEntry :: (self: *ISteamMusicRemote, nID: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_QueueDidChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_PlaylistWillChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_ResetPlaylistEntries :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetPlaylistEntry :: (self: *ISteamMusicRemote, nID: s32, nPosition: s32, pchEntryText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_SetCurrentPlaylistEntry :: (self: *ISteamMusicRemote, nID: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamMusicRemote_PlaylistDidChange :: (self: *ISteamMusicRemote) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamHTTP_v003 :: () -> *ISteamHTTP #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerHTTP_v003 :: () -> *ISteamHTTP #foreign steam_api64;
+
+SteamAPI_ISteamHTTP_CreateHTTPRequest :: (self: *ISteamHTTP, eHTTPRequestMethod: EHTTPMethod, pchAbsoluteURL: *u8) -> HTTPRequestHandle #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestContextValue :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, ulContextValue: uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestNetworkActivityTimeout :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, unTimeoutSeconds: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestHeaderValue :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchHeaderName: *u8, pchHeaderValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestGetOrPostParameter :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchParamName: *u8, pchParamValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SendHTTPRequest :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pCallHandle: *SteamAPICall_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SendHTTPRequestAndStreamResponse :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pCallHandle: *SteamAPICall_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_DeferHTTPRequest :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_PrioritizeHTTPRequest :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPResponseHeaderSize :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchHeaderName: *u8, unResponseHeaderSize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPResponseHeaderValue :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchHeaderName: *u8, pHeaderValueBuffer: *uint8, unBufferSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPResponseBodySize :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, unBodySize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPResponseBodyData :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pBodyDataBuffer: *uint8, unBufferSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPStreamingResponseBodyData :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, cOffset: uint32, pBodyDataBuffer: *uint8, unBufferSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_ReleaseHTTPRequest :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPDownloadProgressPct :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pflPercentOut: *float) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestRawPostBody :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchContentType: *u8, pubBody: *uint8, unBodyLen: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_CreateCookieContainer :: (self: *ISteamHTTP, bAllowResponsesToModify: bool) -> HTTPCookieContainerHandle #foreign steam_api64;
+SteamAPI_ISteamHTTP_ReleaseCookieContainer :: (self: *ISteamHTTP, hCookieContainer: HTTPCookieContainerHandle) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetCookie :: (self: *ISteamHTTP, hCookieContainer: HTTPCookieContainerHandle, pchHost: *u8, pchUrl: *u8, pchCookie: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestCookieContainer :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, hCookieContainer: HTTPCookieContainerHandle) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestUserAgentInfo :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pchUserAgentInfo: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestRequiresVerifiedCertificate :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, bRequireVerifiedCertificate: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_SetHTTPRequestAbsoluteTimeoutMS :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, unMilliseconds: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTTP_GetHTTPRequestWasTimedOut :: (self: *ISteamHTTP, hRequest: HTTPRequestHandle, pbWasTimedOut: *bool) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamInput_v006 :: () -> *ISteamInput #foreign steam_api64;
+
+SteamAPI_ISteamInput_Init :: (self: *ISteamInput, bExplicitlyCallRunFrame: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_Shutdown :: (self: *ISteamInput) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_SetInputActionManifestFilePath :: (self: *ISteamInput, pchInputActionManifestAbsolutePath: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_RunFrame :: (self: *ISteamInput, bReservedValue: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_BWaitForData :: (self: *ISteamInput, bWaitForever: bool, unTimeout: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_BNewDataAvailable :: (self: *ISteamInput) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_GetConnectedControllers :: (self: *ISteamInput, handlesOut: *InputHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamInput_EnableDeviceCallbacks :: (self: *ISteamInput) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_EnableActionEventCallbacks :: (self: *ISteamInput, pCallback: SteamInputActionEventCallbackPointer) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_GetActionSetHandle :: (self: *ISteamInput, pszActionSetName: *u8) -> InputActionSetHandle_t #foreign steam_api64;
+SteamAPI_ISteamInput_ActivateActionSet :: (self: *ISteamInput, inputHandle: InputHandle_t, actionSetHandle: InputActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_GetCurrentActionSet :: (self: *ISteamInput, inputHandle: InputHandle_t) -> InputActionSetHandle_t #foreign steam_api64;
+SteamAPI_ISteamInput_ActivateActionSetLayer :: (self: *ISteamInput, inputHandle: InputHandle_t, actionSetLayerHandle: InputActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_DeactivateActionSetLayer :: (self: *ISteamInput, inputHandle: InputHandle_t, actionSetLayerHandle: InputActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_DeactivateAllActionSetLayers :: (self: *ISteamInput, inputHandle: InputHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_GetActiveActionSetLayers :: (self: *ISteamInput, inputHandle: InputHandle_t, handlesOut: *InputActionSetHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamInput_GetDigitalActionHandle :: (self: *ISteamInput, pszActionName: *u8) -> InputDigitalActionHandle_t #foreign steam_api64;
+SteamAPI_ISteamInput_GetDigitalActionData :: (self: *ISteamInput, inputHandle: InputHandle_t, digitalActionHandle: InputDigitalActionHandle_t) -> InputDigitalActionData_t #foreign steam_api64;
+SteamAPI_ISteamInput_GetDigitalActionOrigins :: (self: *ISteamInput, inputHandle: InputHandle_t, actionSetHandle: InputActionSetHandle_t, digitalActionHandle: InputDigitalActionHandle_t, originsOut: *EInputActionOrigin) -> s32 #foreign steam_api64;
+SteamAPI_ISteamInput_GetStringForDigitalActionName :: (self: *ISteamInput, eActionHandle: InputDigitalActionHandle_t) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetAnalogActionHandle :: (self: *ISteamInput, pszActionName: *u8) -> InputAnalogActionHandle_t #foreign steam_api64;
+SteamAPI_ISteamInput_GetAnalogActionData :: (self: *ISteamInput, inputHandle: InputHandle_t, analogActionHandle: InputAnalogActionHandle_t) -> InputAnalogActionData_t #foreign steam_api64;
+SteamAPI_ISteamInput_GetAnalogActionOrigins :: (self: *ISteamInput, inputHandle: InputHandle_t, actionSetHandle: InputActionSetHandle_t, analogActionHandle: InputAnalogActionHandle_t, originsOut: *EInputActionOrigin) -> s32 #foreign steam_api64;
+SteamAPI_ISteamInput_GetGlyphPNGForActionOrigin :: (self: *ISteamInput, eOrigin: EInputActionOrigin, eSize: ESteamInputGlyphSize, unFlags: uint32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetGlyphSVGForActionOrigin :: (self: *ISteamInput, eOrigin: EInputActionOrigin, unFlags: uint32) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetGlyphForActionOrigin_Legacy :: (self: *ISteamInput, eOrigin: EInputActionOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetStringForActionOrigin :: (self: *ISteamInput, eOrigin: EInputActionOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetStringForAnalogActionName :: (self: *ISteamInput, eActionHandle: InputAnalogActionHandle_t) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_StopAnalogActionMomentum :: (self: *ISteamInput, inputHandle: InputHandle_t, eAction: InputAnalogActionHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_GetMotionData :: (self: *ISteamInput, inputHandle: InputHandle_t) -> InputMotionData_t #foreign steam_api64;
+SteamAPI_ISteamInput_TriggerVibration :: (self: *ISteamInput, inputHandle: InputHandle_t, usLeftSpeed: u16, usRightSpeed: u16) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_TriggerVibrationExtended :: (self: *ISteamInput, inputHandle: InputHandle_t, usLeftSpeed: u16, usRightSpeed: u16, usLeftTriggerSpeed: u16, usRightTriggerSpeed: u16) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_TriggerSimpleHapticEvent :: (self: *ISteamInput, inputHandle: InputHandle_t, eHapticLocation: EControllerHapticLocation, nIntensity: uint8, nGainDB: u8, nOtherIntensity: uint8, nOtherGainDB: u8) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_SetLEDColor :: (self: *ISteamInput, inputHandle: InputHandle_t, nColorR: uint8, nColorG: uint8, nColorB: uint8, nFlags: u32) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_Legacy_TriggerHapticPulse :: (self: *ISteamInput, inputHandle: InputHandle_t, eTargetPad: ESteamControllerPad, usDurationMicroSec: u16) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_Legacy_TriggerRepeatedHapticPulse :: (self: *ISteamInput, inputHandle: InputHandle_t, eTargetPad: ESteamControllerPad, usDurationMicroSec: u16, usOffMicroSec: u16, unRepeat: u16, nFlags: u32) -> void #foreign steam_api64;
+SteamAPI_ISteamInput_ShowBindingPanel :: (self: *ISteamInput, inputHandle: InputHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_GetInputTypeForHandle :: (self: *ISteamInput, inputHandle: InputHandle_t) -> ESteamInputType #foreign steam_api64;
+SteamAPI_ISteamInput_GetControllerForGamepadIndex :: (self: *ISteamInput, nIndex: s32) -> InputHandle_t #foreign steam_api64;
+SteamAPI_ISteamInput_GetGamepadIndexForController :: (self: *ISteamInput, ulinputHandle: InputHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamInput_GetStringForXboxOrigin :: (self: *ISteamInput, eOrigin: EXboxOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetGlyphForXboxOrigin :: (self: *ISteamInput, eOrigin: EXboxOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamInput_GetActionOriginFromXboxOrigin :: (self: *ISteamInput, inputHandle: InputHandle_t, eOrigin: EXboxOrigin) -> EInputActionOrigin #foreign steam_api64;
+SteamAPI_ISteamInput_TranslateActionOrigin :: (self: *ISteamInput, eDestinationInputType: ESteamInputType, eSourceOrigin: EInputActionOrigin) -> EInputActionOrigin #foreign steam_api64;
+SteamAPI_ISteamInput_GetDeviceBindingRevision :: (self: *ISteamInput, inputHandle: InputHandle_t, pMajor: *s32, pMinor: *s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInput_GetRemotePlaySessionID :: (self: *ISteamInput, inputHandle: InputHandle_t) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamInput_GetSessionInputConfigurationSettings :: (self: *ISteamInput) -> uint16 #foreign steam_api64;
+SteamAPI_ISteamInput_SetDualSenseTriggerEffect :: (self: *ISteamInput, inputHandle: InputHandle_t, pParam: *ScePadTriggerEffectParam) -> void #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamController_v008 :: () -> *ISteamController #foreign steam_api64;
+
+SteamAPI_ISteamController_Init :: (self: *ISteamController) -> bool #foreign steam_api64;
+SteamAPI_ISteamController_Shutdown :: (self: *ISteamController) -> bool #foreign steam_api64;
+SteamAPI_ISteamController_RunFrame :: (self: *ISteamController) -> void #foreign steam_api64;
+SteamAPI_ISteamController_GetConnectedControllers :: (self: *ISteamController, handlesOut: *ControllerHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamController_GetActionSetHandle :: (self: *ISteamController, pszActionSetName: *u8) -> ControllerActionSetHandle_t #foreign steam_api64;
+SteamAPI_ISteamController_ActivateActionSet :: (self: *ISteamController, controllerHandle: ControllerHandle_t, actionSetHandle: ControllerActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamController_GetCurrentActionSet :: (self: *ISteamController, controllerHandle: ControllerHandle_t) -> ControllerActionSetHandle_t #foreign steam_api64;
+SteamAPI_ISteamController_ActivateActionSetLayer :: (self: *ISteamController, controllerHandle: ControllerHandle_t, actionSetLayerHandle: ControllerActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamController_DeactivateActionSetLayer :: (self: *ISteamController, controllerHandle: ControllerHandle_t, actionSetLayerHandle: ControllerActionSetHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamController_DeactivateAllActionSetLayers :: (self: *ISteamController, controllerHandle: ControllerHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamController_GetActiveActionSetLayers :: (self: *ISteamController, controllerHandle: ControllerHandle_t, handlesOut: *ControllerActionSetHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamController_GetDigitalActionHandle :: (self: *ISteamController, pszActionName: *u8) -> ControllerDigitalActionHandle_t #foreign steam_api64;
+SteamAPI_ISteamController_GetDigitalActionData :: (self: *ISteamController, controllerHandle: ControllerHandle_t, digitalActionHandle: ControllerDigitalActionHandle_t) -> InputDigitalActionData_t #foreign steam_api64;
+SteamAPI_ISteamController_GetDigitalActionOrigins :: (self: *ISteamController, controllerHandle: ControllerHandle_t, actionSetHandle: ControllerActionSetHandle_t, digitalActionHandle: ControllerDigitalActionHandle_t, originsOut: *EControllerActionOrigin) -> s32 #foreign steam_api64;
+SteamAPI_ISteamController_GetAnalogActionHandle :: (self: *ISteamController, pszActionName: *u8) -> ControllerAnalogActionHandle_t #foreign steam_api64;
+SteamAPI_ISteamController_GetAnalogActionData :: (self: *ISteamController, controllerHandle: ControllerHandle_t, analogActionHandle: ControllerAnalogActionHandle_t) -> InputAnalogActionData_t #foreign steam_api64;
+SteamAPI_ISteamController_GetAnalogActionOrigins :: (self: *ISteamController, controllerHandle: ControllerHandle_t, actionSetHandle: ControllerActionSetHandle_t, analogActionHandle: ControllerAnalogActionHandle_t, originsOut: *EControllerActionOrigin) -> s32 #foreign steam_api64;
+SteamAPI_ISteamController_GetGlyphForActionOrigin :: (self: *ISteamController, eOrigin: EControllerActionOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamController_GetStringForActionOrigin :: (self: *ISteamController, eOrigin: EControllerActionOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamController_StopAnalogActionMomentum :: (self: *ISteamController, controllerHandle: ControllerHandle_t, eAction: ControllerAnalogActionHandle_t) -> void #foreign steam_api64;
+SteamAPI_ISteamController_GetMotionData :: (self: *ISteamController, controllerHandle: ControllerHandle_t) -> InputMotionData_t #foreign steam_api64;
+SteamAPI_ISteamController_TriggerHapticPulse :: (self: *ISteamController, controllerHandle: ControllerHandle_t, eTargetPad: ESteamControllerPad, usDurationMicroSec: u16) -> void #foreign steam_api64;
+SteamAPI_ISteamController_TriggerRepeatedHapticPulse :: (self: *ISteamController, controllerHandle: ControllerHandle_t, eTargetPad: ESteamControllerPad, usDurationMicroSec: u16, usOffMicroSec: u16, unRepeat: u16, nFlags: u32) -> void #foreign steam_api64;
+SteamAPI_ISteamController_TriggerVibration :: (self: *ISteamController, controllerHandle: ControllerHandle_t, usLeftSpeed: u16, usRightSpeed: u16) -> void #foreign steam_api64;
+SteamAPI_ISteamController_SetLEDColor :: (self: *ISteamController, controllerHandle: ControllerHandle_t, nColorR: uint8, nColorG: uint8, nColorB: uint8, nFlags: u32) -> void #foreign steam_api64;
+SteamAPI_ISteamController_ShowBindingPanel :: (self: *ISteamController, controllerHandle: ControllerHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamController_GetInputTypeForHandle :: (self: *ISteamController, controllerHandle: ControllerHandle_t) -> ESteamInputType #foreign steam_api64;
+SteamAPI_ISteamController_GetControllerForGamepadIndex :: (self: *ISteamController, nIndex: s32) -> ControllerHandle_t #foreign steam_api64;
+SteamAPI_ISteamController_GetGamepadIndexForController :: (self: *ISteamController, ulControllerHandle: ControllerHandle_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamController_GetStringForXboxOrigin :: (self: *ISteamController, eOrigin: EXboxOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamController_GetGlyphForXboxOrigin :: (self: *ISteamController, eOrigin: EXboxOrigin) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamController_GetActionOriginFromXboxOrigin :: (self: *ISteamController, controllerHandle: ControllerHandle_t, eOrigin: EXboxOrigin) -> EControllerActionOrigin #foreign steam_api64;
+SteamAPI_ISteamController_TranslateActionOrigin :: (self: *ISteamController, eDestinationInputType: ESteamInputType, eSourceOrigin: EControllerActionOrigin) -> EControllerActionOrigin #foreign steam_api64;
+SteamAPI_ISteamController_GetControllerBindingRevision :: (self: *ISteamController, controllerHandle: ControllerHandle_t, pMajor: *s32, pMinor: *s32) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamUGC_v020 :: () -> *ISteamUGC #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerUGC_v020 :: () -> *ISteamUGC #foreign steam_api64;
+
+SteamAPI_ISteamUGC_CreateQueryUserUGCRequest :: (self: *ISteamUGC, unAccountID: AccountID_t, eListType: EUserUGCList, eMatchingUGCType: EUGCMatchingUGCType, eSortOrder: EUserUGCListSortOrder, nCreatorAppID: AppId_t, nConsumerAppID: AppId_t, unPage: uint32) -> UGCQueryHandle_t #foreign steam_api64;
+SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage :: (self: *ISteamUGC, eQueryType: EUGCQuery, eMatchingeMatchingUGCTypeFileType: EUGCMatchingUGCType, nCreatorAppID: AppId_t, nConsumerAppID: AppId_t, unPage: uint32) -> UGCQueryHandle_t #foreign steam_api64;
+SteamAPI_ISteamUGC_CreateQueryAllUGCRequestCursor :: (self: *ISteamUGC, eQueryType: EUGCQuery, eMatchingeMatchingUGCTypeFileType: EUGCMatchingUGCType, nCreatorAppID: AppId_t, nConsumerAppID: AppId_t, pchCursor: *u8) -> UGCQueryHandle_t #foreign steam_api64;
+SteamAPI_ISteamUGC_CreateQueryUGCDetailsRequest :: (self: *ISteamUGC, pvecPublishedFileID: *PublishedFileId_t, unNumPublishedFileIDs: uint32) -> UGCQueryHandle_t #foreign steam_api64;
+SteamAPI_ISteamUGC_SendQueryUGCRequest :: (self: *ISteamUGC, handle: UGCQueryHandle_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCResult :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pDetails: *SteamUGCDetails_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCNumTags :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, indexTag: uint32, pchValue: *u8, cchValueSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCTagDisplayName :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, indexTag: uint32, pchValue: *u8, cchValueSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCPreviewURL :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pchURL: *u8, cchURLSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCMetadata :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pchMetadata: *u8, cchMetadatasize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCChildren :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pvecPublishedFileID: *PublishedFileId_t, cMaxEntries: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCStatistic :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, eStatType: EItemStatistic, pStatValue: *uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCNumAdditionalPreviews :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCAdditionalPreview :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, previewIndex: uint32, pchURLOrVideoID: *u8, cchURLSize: uint32, pchOriginalFileName: *u8, cchOriginalFileNameSize: uint32, pPreviewType: *EItemPreviewType) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCNumKeyValueTags :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCKeyValueTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, keyValueTagIndex: uint32, pchKey: *u8, cchKeySize: uint32, pchValue: *u8, cchValueSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryFirstUGCKeyValueTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pchKey: *u8, pchValue: *u8, cchValueSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetNumSupportedGameVersions :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetSupportedGameVersionData :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, versionIndex: uint32, pchGameBranchMin: *u8, pchGameBranchMax: *u8, cchGameBranchSize: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetQueryUGCContentDescriptors :: (self: *ISteamUGC, handle: UGCQueryHandle_t, index: uint32, pvecDescriptors: *EUGCContentDescriptorID, cMaxEntries: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_ReleaseQueryUGCRequest :: (self: *ISteamUGC, handle: UGCQueryHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddRequiredTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pTagName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddRequiredTagGroup :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pTagGroups: *SteamParamStringArray_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddExcludedTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pTagName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnOnlyIDs :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnOnlyIDs: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnKeyValueTags :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnKeyValueTags: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnLongDescription :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnLongDescription: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnMetadata :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnMetadata: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnChildren :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnChildren: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnAdditionalPreviews :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnAdditionalPreviews: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnTotalOnly :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bReturnTotalOnly: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetReturnPlaytimeStats :: (self: *ISteamUGC, handle: UGCQueryHandle_t, unDays: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetLanguage :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pchLanguage: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetAllowCachedResponse :: (self: *ISteamUGC, handle: UGCQueryHandle_t, unMaxAgeSeconds: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetAdminQuery :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, bAdminQuery: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetCloudFileNameFilter :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pMatchCloudFileName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetMatchAnyTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, bMatchAnyTag: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetSearchText :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pSearchText: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetRankedByTrendDays :: (self: *ISteamUGC, handle: UGCQueryHandle_t, unDays: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetTimeCreatedDateRange :: (self: *ISteamUGC, handle: UGCQueryHandle_t, rtStart: RTime32, rtEnd: RTime32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetTimeUpdatedDateRange :: (self: *ISteamUGC, handle: UGCQueryHandle_t, rtStart: RTime32, rtEnd: RTime32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddRequiredKeyValueTag :: (self: *ISteamUGC, handle: UGCQueryHandle_t, pKey: *u8, pValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_RequestUGCDetails :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, unMaxAgeSeconds: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_CreateItem :: (self: *ISteamUGC, nConsumerAppId: AppId_t, eFileType: EWorkshopFileType) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_StartItemUpdate :: (self: *ISteamUGC, nConsumerAppId: AppId_t, nPublishedFileID: PublishedFileId_t) -> UGCUpdateHandle_t #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemTitle :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchTitle: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemDescription :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchDescription: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemUpdateLanguage :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchLanguage: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemMetadata :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchMetaData: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemVisibility :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, eVisibility: ERemoteStoragePublishedFileVisibility) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemTags :: (self: *ISteamUGC, updateHandle: UGCUpdateHandle_t, pTags: *SteamParamStringArray_t, bAllowAdminTags: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemContent :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pszContentFolder: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetItemPreview :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pszPreviewFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetAllowLegacyUpload :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, bAllowLegacyUpload: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveAllItemKeyValueTags :: (self: *ISteamUGC, handle: UGCUpdateHandle_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveItemKeyValueTags :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchKey: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddItemKeyValueTag :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchKey: *u8, pchValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddItemPreviewFile :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pszPreviewFile: *u8, type: EItemPreviewType) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddItemPreviewVideo :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pszVideoID: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_UpdateItemPreviewFile :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, index: uint32, pszPreviewFile: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_UpdateItemPreviewVideo :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, index: uint32, pszVideoID: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveItemPreview :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, index: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_AddContentDescriptor :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, descid: EUGCContentDescriptorID) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveContentDescriptor :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, descid: EUGCContentDescriptorID) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SetRequiredGameVersions :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pszGameBranchMin: *u8, pszGameBranchMax: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SubmitItemUpdate :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, pchChangeNote: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetItemUpdateProgress :: (self: *ISteamUGC, handle: UGCUpdateHandle_t, punBytesProcessed: *uint64, punBytesTotal: *uint64) -> EItemUpdateStatus #foreign steam_api64;
+SteamAPI_ISteamUGC_SetUserItemVote :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, bVoteUp: bool) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetUserItemVote :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_AddItemToFavorites :: (self: *ISteamUGC, nAppId: AppId_t, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveItemFromFavorites :: (self: *ISteamUGC, nAppId: AppId_t, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_SubscribeItem :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_UnsubscribeItem :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetNumSubscribedItems :: (self: *ISteamUGC) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetSubscribedItems :: (self: *ISteamUGC, pvecPublishedFileID: *PublishedFileId_t, cMaxEntries: uint32) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetItemState :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamUGC_GetItemInstallInfo :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, punSizeOnDisk: *uint64, pchFolder: *u8, cchFolderSize: uint32, punTimeStamp: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetItemDownloadInfo :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, punBytesDownloaded: *uint64, punBytesTotal: *uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_DownloadItem :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, bHighPriority: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_BInitWorkshopForGameServer :: (self: *ISteamUGC, unWorkshopDepotID: DepotId_t, pszFolder: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_SuspendDownloads :: (self: *ISteamUGC, bSuspend: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamUGC_StartPlaytimeTracking :: (self: *ISteamUGC, pvecPublishedFileID: *PublishedFileId_t, unNumPublishedFileIDs: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_StopPlaytimeTracking :: (self: *ISteamUGC, pvecPublishedFileID: *PublishedFileId_t, unNumPublishedFileIDs: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_StopPlaytimeTrackingForAllItems :: (self: *ISteamUGC) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_AddDependency :: (self: *ISteamUGC, nParentPublishedFileID: PublishedFileId_t, nChildPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveDependency :: (self: *ISteamUGC, nParentPublishedFileID: PublishedFileId_t, nChildPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_AddAppDependency :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, nAppID: AppId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_RemoveAppDependency :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t, nAppID: AppId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetAppDependencies :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_DeleteItem :: (self: *ISteamUGC, nPublishedFileID: PublishedFileId_t) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_ShowWorkshopEULA :: (self: *ISteamUGC) -> bool #foreign steam_api64;
+SteamAPI_ISteamUGC_GetWorkshopEULAStatus :: (self: *ISteamUGC) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamUGC_GetUserContentDescriptorPreferences :: (self: *ISteamUGC, pvecDescriptors: *EUGCContentDescriptorID, cMaxEntries: uint32) -> uint32 #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamHTMLSurface_v005 :: () -> *ISteamHTMLSurface #foreign steam_api64;
+
+SteamAPI_ISteamHTMLSurface_Init :: (self: *ISteamHTMLSurface) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_Shutdown :: (self: *ISteamHTMLSurface) -> bool #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_CreateBrowser :: (self: *ISteamHTMLSurface, pchUserAgent: *u8, pchUserCSS: *u8) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_RemoveBrowser :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_LoadURL :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchURL: *u8, pchPostData: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetSize :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, unWidth: uint32, unHeight: uint32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_StopLoad :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_Reload :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_GoBack :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_GoForward :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_AddHeader :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchKey: *u8, pchValue: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_ExecuteJavascript :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchScript: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_MouseUp :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_MouseDown :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_MouseDoubleClick :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, eMouseButton: ISteamHTMLSurface.EHTMLMouseButton) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_MouseMove :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_MouseWheel :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nDelta: int32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_KeyDown :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers, bIsSystemKey: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_KeyUp :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nNativeKeyCode: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_KeyChar :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, cUnicodeChar: uint32, eHTMLKeyModifiers: ISteamHTMLSurface.EHTMLKeyModifiers) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetHorizontalScroll :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetVerticalScroll :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, nAbsolutePixelScroll: uint32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetKeyFocus :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bHasKeyFocus: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_ViewSource :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_CopyToClipboard :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_PasteFromClipboard :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_Find :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSearchStr: *u8, bCurrentlyInFind: bool, bReverse: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_StopFind :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_GetLinkAtPosition :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, x: s32, y: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetCookie :: (self: *ISteamHTMLSurface, pchHostname: *u8, pchKey: *u8, pchValue: *u8, pchPath: *u8, nExpires: RTime32, bSecure: bool, bHTTPOnly: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetPageScaleFactor :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flZoom: float, nPointX: s32, nPointY: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetBackgroundMode :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bBackgroundMode: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_SetDPIScalingFactor :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, flDPIScaling: float) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_OpenDeveloperTools :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_AllowStartRequest :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bAllowed: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_JSDialogResponse :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, bResult: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamHTMLSurface_FileLoadDialogResponse :: (self: *ISteamHTMLSurface, unBrowserHandle: HHTMLBrowser, pchSelectedFiles: **u8) -> void #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamInventory_v003 :: () -> *ISteamInventory #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerInventory_v003 :: () -> *ISteamInventory #foreign steam_api64;
+
+SteamAPI_ISteamInventory_GetResultStatus :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t) -> EResult #foreign steam_api64;
+SteamAPI_ISteamInventory_GetResultItems :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t, pOutItemsArray: *SteamItemDetails_t, punOutItemsArraySize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetResultItemProperty :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t, unItemIndex: uint32, pchPropertyName: *u8, pchValueBuffer: *u8, punValueBufferSizeOut: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetResultTimestamp :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamInventory_CheckResultSteamID :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t, steamIDExpected: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_DestroyResult :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t) -> void #foreign steam_api64;
+SteamAPI_ISteamInventory_GetAllItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetItemsByID :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, pInstanceIDs: *SteamItemInstanceID_t, unCountInstanceIDs: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SerializeResult :: (self: *ISteamInventory, resultHandle: SteamInventoryResult_t, pOutBuffer: *void, punOutBufferSize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_DeserializeResult :: (self: *ISteamInventory, pOutResultHandle: *SteamInventoryResult_t, pBuffer: *void, unBufferSize: uint32, bRESERVED_MUST_BE_FALSE: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GenerateItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, pArrayItemDefs: *SteamItemDef_t, punArrayQuantity: *uint32, unArrayLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GrantPromoItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_AddPromoItem :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, itemDef: SteamItemDef_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_AddPromoItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, pArrayItemDefs: *SteamItemDef_t, unArrayLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_ConsumeItem :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, itemConsume: SteamItemInstanceID_t, unQuantity: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_ExchangeItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, pArrayGenerate: *SteamItemDef_t, punArrayGenerateQuantity: *uint32, unArrayGenerateLength: uint32, pArrayDestroy: *SteamItemInstanceID_t, punArrayDestroyQuantity: *uint32, unArrayDestroyLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_TransferItemQuantity :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, itemIdSource: SteamItemInstanceID_t, unQuantity: uint32, itemIdDest: SteamItemInstanceID_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SendItemDropHeartbeat :: (self: *ISteamInventory) -> void #foreign steam_api64;
+SteamAPI_ISteamInventory_TriggerItemDrop :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, dropListDefinition: SteamItemDef_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_TradeItems :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, steamIDTradePartner: uint64_steamid, pArrayGive: *SteamItemInstanceID_t, pArrayGiveQuantity: *uint32, nArrayGiveLength: uint32, pArrayGet: *SteamItemInstanceID_t, pArrayGetQuantity: *uint32, nArrayGetLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_LoadItemDefinitions :: (self: *ISteamInventory) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetItemDefinitionIDs :: (self: *ISteamInventory, pItemDefIDs: *SteamItemDef_t, punItemDefIDsArraySize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetItemDefinitionProperty :: (self: *ISteamInventory, iDefinition: SteamItemDef_t, pchPropertyName: *u8, pchValueBuffer: *u8, punValueBufferSizeOut: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_RequestEligiblePromoItemDefinitionsIDs :: (self: *ISteamInventory, steamID: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamInventory_GetEligiblePromoItemDefinitionIDs :: (self: *ISteamInventory, steamID: uint64_steamid, pItemDefIDs: *SteamItemDef_t, punItemDefIDsArraySize: *uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_StartPurchase :: (self: *ISteamInventory, pArrayItemDefs: *SteamItemDef_t, punArrayQuantity: *uint32, unArrayLength: uint32) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamInventory_RequestPrices :: (self: *ISteamInventory) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamInventory_GetNumItemsWithPrices :: (self: *ISteamInventory) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamInventory_GetItemsWithPrices :: (self: *ISteamInventory, pArrayItemDefs: *SteamItemDef_t, pCurrentPrices: *uint64, pBasePrices: *uint64, unArrayLength: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_GetItemPrice :: (self: *ISteamInventory, iDefinition: SteamItemDef_t, pCurrentPrice: *uint64, pBasePrice: *uint64) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_StartUpdateProperties :: (self: *ISteamInventory) -> SteamInventoryUpdateHandle_t #foreign steam_api64;
+SteamAPI_ISteamInventory_RemoveProperty :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, nItemID: SteamItemInstanceID_t, pchPropertyName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SetPropertyString :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, nItemID: SteamItemInstanceID_t, pchPropertyName: *u8, pchPropertyValue: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SetPropertyBool :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, nItemID: SteamItemInstanceID_t, pchPropertyName: *u8, bValue: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SetPropertyInt64 :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, nItemID: SteamItemInstanceID_t, pchPropertyName: *u8, nValue: int64) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SetPropertyFloat :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, nItemID: SteamItemInstanceID_t, pchPropertyName: *u8, flValue: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_SubmitUpdateProperties :: (self: *ISteamInventory, handle: SteamInventoryUpdateHandle_t, pResultHandle: *SteamInventoryResult_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamInventory_InspectItem :: (self: *ISteamInventory, pResultHandle: *SteamInventoryResult_t, pchItemToken: *u8) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamTimeline_v001 :: () -> *ISteamTimeline #foreign steam_api64;
+
+SteamAPI_ISteamTimeline_SetTimelineStateDescription :: (self: *ISteamTimeline, pchDescription: *u8, flTimeDelta: float) -> void #foreign steam_api64;
+SteamAPI_ISteamTimeline_ClearTimelineStateDescription :: (self: *ISteamTimeline, flTimeDelta: float) -> void #foreign steam_api64;
+SteamAPI_ISteamTimeline_AddTimelineEvent :: (self: *ISteamTimeline, pchIcon: *u8, pchTitle: *u8, pchDescription: *u8, unPriority: uint32, flStartOffsetSeconds: float, flDurationSeconds: float, ePossibleClip: ETimelineEventClipPriority) -> void #foreign steam_api64;
+SteamAPI_ISteamTimeline_SetTimelineGameMode :: (self: *ISteamTimeline, eMode: ETimelineGameMode) -> void #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamVideo_v007 :: () -> *ISteamVideo #foreign steam_api64;
+
+SteamAPI_ISteamVideo_GetVideoURL :: (self: *ISteamVideo, unVideoAppID: AppId_t) -> void #foreign steam_api64;
+SteamAPI_ISteamVideo_IsBroadcasting :: (self: *ISteamVideo, pnNumViewers: *s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamVideo_GetOPFSettings :: (self: *ISteamVideo, unVideoAppID: AppId_t) -> void #foreign steam_api64;
+SteamAPI_ISteamVideo_GetOPFStringForApp :: (self: *ISteamVideo, unVideoAppID: AppId_t, pchBuffer: *u8, pnBufferSize: *int32) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamParentalSettings_v001 :: () -> *ISteamParentalSettings #foreign steam_api64;
+
+SteamAPI_ISteamParentalSettings_BIsParentalLockEnabled :: (self: *ISteamParentalSettings) -> bool #foreign steam_api64;
+SteamAPI_ISteamParentalSettings_BIsParentalLockLocked :: (self: *ISteamParentalSettings) -> bool #foreign steam_api64;
+SteamAPI_ISteamParentalSettings_BIsAppBlocked :: (self: *ISteamParentalSettings, nAppID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamParentalSettings_BIsAppInBlockList :: (self: *ISteamParentalSettings, nAppID: AppId_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamParentalSettings_BIsFeatureBlocked :: (self: *ISteamParentalSettings, eFeature: EParentalFeature) -> bool #foreign steam_api64;
+SteamAPI_ISteamParentalSettings_BIsFeatureInBlockList :: (self: *ISteamParentalSettings, eFeature: EParentalFeature) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamRemotePlay_v002 :: () -> *ISteamRemotePlay #foreign steam_api64;
+
+SteamAPI_ISteamRemotePlay_GetSessionCount :: (self: *ISteamRemotePlay) -> uint32 #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_GetSessionID :: (self: *ISteamRemotePlay, iSessionIndex: s32) -> RemotePlaySessionID_t #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_GetSessionSteamID :: (self: *ISteamRemotePlay, unSessionID: RemotePlaySessionID_t) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_GetSessionClientName :: (self: *ISteamRemotePlay, unSessionID: RemotePlaySessionID_t) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_GetSessionClientFormFactor :: (self: *ISteamRemotePlay, unSessionID: RemotePlaySessionID_t) -> ESteamDeviceFormFactor #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_BGetSessionClientResolution :: (self: *ISteamRemotePlay, unSessionID: RemotePlaySessionID_t, pnResolutionX: *s32, pnResolutionY: *s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_BStartRemotePlayTogether :: (self: *ISteamRemotePlay, bShowOverlay: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamRemotePlay_BSendRemotePlayTogetherInvite :: (self: *ISteamRemotePlay, steamIDFriend: uint64_steamid) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamNetworkingMessages_SteamAPI_v002 :: () -> *ISteamNetworkingMessages #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerNetworkingMessages_SteamAPI_v002 :: () -> *ISteamNetworkingMessages #foreign steam_api64;
+
+SteamAPI_ISteamNetworkingMessages_SendMessageToUser :: (self: *ISteamNetworkingMessages, identityRemote: *SteamNetworkingIdentity, pubData: *void, cubData: uint32, nSendFlags: s32, nRemoteChannel: s32) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_SendMessageToUser :: (self: *ISteamNetworkingMessages, identityRemote: SteamNetworkingIdentity, pubData: *void, cubData: uint32, nSendFlags: s32, nRemoteChannel: s32) -> EResult #no_context {
+    return SteamAPI_ISteamNetworkingMessages_SendMessageToUser(self, *identityRemote, pubData, cubData, nSendFlags, nRemoteChannel);
+}
+SteamAPI_ISteamNetworkingMessages_ReceiveMessagesOnChannel :: (self: *ISteamNetworkingMessages, nLocalChannel: s32, ppOutMessages: **SteamNetworkingMessage_t, nMaxMessages: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_AcceptSessionWithUser :: (self: *ISteamNetworkingMessages, identityRemote: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_AcceptSessionWithUser :: (self: *ISteamNetworkingMessages, identityRemote: SteamNetworkingIdentity) -> bool #no_context {
+    return SteamAPI_ISteamNetworkingMessages_AcceptSessionWithUser(self, *identityRemote);
+}
+SteamAPI_ISteamNetworkingMessages_CloseSessionWithUser :: (self: *ISteamNetworkingMessages, identityRemote: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_CloseSessionWithUser :: (self: *ISteamNetworkingMessages, identityRemote: SteamNetworkingIdentity) -> bool #no_context {
+    return SteamAPI_ISteamNetworkingMessages_CloseSessionWithUser(self, *identityRemote);
+}
+SteamAPI_ISteamNetworkingMessages_CloseChannelWithUser :: (self: *ISteamNetworkingMessages, identityRemote: *SteamNetworkingIdentity, nLocalChannel: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_CloseChannelWithUser :: (self: *ISteamNetworkingMessages, identityRemote: SteamNetworkingIdentity, nLocalChannel: s32) -> bool #no_context {
+    return SteamAPI_ISteamNetworkingMessages_CloseChannelWithUser(self, *identityRemote, nLocalChannel);
+}
+SteamAPI_ISteamNetworkingMessages_GetSessionConnectionInfo :: (self: *ISteamNetworkingMessages, identityRemote: *SteamNetworkingIdentity, pConnectionInfo: *SteamNetConnectionInfo_t, pQuickStatus: *SteamNetConnectionRealTimeStatus_t) -> ESteamNetworkingConnectionState #foreign steam_api64;
+SteamAPI_ISteamNetworkingMessages_GetSessionConnectionInfo :: (self: *ISteamNetworkingMessages, identityRemote: SteamNetworkingIdentity, pConnectionInfo: *SteamNetConnectionInfo_t, pQuickStatus: *SteamNetConnectionRealTimeStatus_t) -> ESteamNetworkingConnectionState #no_context {
+    return SteamAPI_ISteamNetworkingMessages_GetSessionConnectionInfo(self, *identityRemote, pConnectionInfo, pQuickStatus);
+}
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamNetworkingSockets_SteamAPI_v012 :: () -> *ISteamNetworkingSockets #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerNetworkingSockets_SteamAPI_v012 :: () -> *ISteamNetworkingSockets #foreign steam_api64;
+
+SteamAPI_ISteamNetworkingSockets_CreateListenSocketIP :: (self: *ISteamNetworkingSockets, localAddress: *SteamNetworkingIPAddr, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamListenSocket #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreateListenSocketIP :: (self: *ISteamNetworkingSockets, localAddress: SteamNetworkingIPAddr, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamListenSocket #no_context {
+    return SteamAPI_ISteamNetworkingSockets_CreateListenSocketIP(self, *localAddress, nOptions, pOptions);
+}
+SteamAPI_ISteamNetworkingSockets_ConnectByIPAddress :: (self: *ISteamNetworkingSockets, address: *SteamNetworkingIPAddr, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConnectByIPAddress :: (self: *ISteamNetworkingSockets, address: SteamNetworkingIPAddr, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #no_context {
+    return SteamAPI_ISteamNetworkingSockets_ConnectByIPAddress(self, *address, nOptions, pOptions);
+}
+SteamAPI_ISteamNetworkingSockets_CreateListenSocketP2P :: (self: *ISteamNetworkingSockets, nLocalVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamListenSocket #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConnectP2P :: (self: *ISteamNetworkingSockets, identityRemote: *SteamNetworkingIdentity, nRemoteVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConnectP2P :: (self: *ISteamNetworkingSockets, identityRemote: SteamNetworkingIdentity, nRemoteVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #no_context {
+    return SteamAPI_ISteamNetworkingSockets_ConnectP2P(self, *identityRemote, nRemoteVirtualPort, nOptions, pOptions);
+}
+SteamAPI_ISteamNetworkingSockets_AcceptConnection :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CloseConnection :: (self: *ISteamNetworkingSockets, hPeer: HSteamNetConnection, nReason: s32, pszDebug: *u8, bEnableLinger: bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CloseListenSocket :: (self: *ISteamNetworkingSockets, hSocket: HSteamListenSocket) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SetConnectionUserData :: (self: *ISteamNetworkingSockets, hPeer: HSteamNetConnection, nUserData: int64) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetConnectionUserData :: (self: *ISteamNetworkingSockets, hPeer: HSteamNetConnection) -> int64 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SetConnectionName :: (self: *ISteamNetworkingSockets, hPeer: HSteamNetConnection, pszName: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetConnectionName :: (self: *ISteamNetworkingSockets, hPeer: HSteamNetConnection, pszName: *u8, nMaxLen: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SendMessageToConnection :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, pData: *void, cbData: uint32, nSendFlags: s32, pOutMessageNumber: *int64) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SendMessages :: (self: *ISteamNetworkingSockets, nMessages: s32, pMessages: **SteamNetworkingMessage_t, pOutMessageNumberOrResult: *int64) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_FlushMessagesOnConnection :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ReceiveMessagesOnConnection :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, ppOutMessages: **SteamNetworkingMessage_t, nMaxMessages: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetConnectionInfo :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, pInfo: *SteamNetConnectionInfo_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetConnectionRealTimeStatus :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, pStatus: *SteamNetConnectionRealTimeStatus_t, nLanes: s32, pLanes: *SteamNetConnectionRealTimeLaneStatus_t) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetDetailedConnectionStatus :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, pszBuf: *u8, cbBuf: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetListenSocketAddress :: (self: *ISteamNetworkingSockets, hSocket: HSteamListenSocket, address: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreateSocketPair :: (self: *ISteamNetworkingSockets, pOutConnection1: *HSteamNetConnection, pOutConnection2: *HSteamNetConnection, bUseNetworkLoopback: bool, pIdentity1: *SteamNetworkingIdentity, pIdentity2: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConfigureConnectionLanes :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, nNumLanes: s32, pLanePriorities: *s32, pLaneWeights: *uint16) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetIdentity :: (self: *ISteamNetworkingSockets, pIdentity: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_InitAuthentication :: (self: *ISteamNetworkingSockets) -> ESteamNetworkingAvailability #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetAuthenticationStatus :: (self: *ISteamNetworkingSockets, pDetails: *SteamNetAuthenticationStatus_t) -> ESteamNetworkingAvailability #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreatePollGroup :: (self: *ISteamNetworkingSockets) -> HSteamNetPollGroup #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_DestroyPollGroup :: (self: *ISteamNetworkingSockets, hPollGroup: HSteamNetPollGroup) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SetConnectionPollGroup :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, hPollGroup: HSteamNetPollGroup) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ReceiveMessagesOnPollGroup :: (self: *ISteamNetworkingSockets, hPollGroup: HSteamNetPollGroup, ppOutMessages: **SteamNetworkingMessage_t, nMaxMessages: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ReceivedRelayAuthTicket :: (self: *ISteamNetworkingSockets, pvTicket: *void, cbTicket: s32, pOutParsedTicket: *SteamDatagramRelayAuthTicket) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_FindRelayAuthTicketForServer :: (self: *ISteamNetworkingSockets, identityGameServer: *SteamNetworkingIdentity, nRemoteVirtualPort: s32, pOutParsedTicket: *SteamDatagramRelayAuthTicket) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_FindRelayAuthTicketForServer :: (self: *ISteamNetworkingSockets, identityGameServer: SteamNetworkingIdentity, nRemoteVirtualPort: s32, pOutParsedTicket: *SteamDatagramRelayAuthTicket) -> s32 #no_context {
+    return SteamAPI_ISteamNetworkingSockets_FindRelayAuthTicketForServer(self, *identityGameServer, nRemoteVirtualPort, pOutParsedTicket);
+}
+SteamAPI_ISteamNetworkingSockets_ConnectToHostedDedicatedServer :: (self: *ISteamNetworkingSockets, identityTarget: *SteamNetworkingIdentity, nRemoteVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConnectToHostedDedicatedServer :: (self: *ISteamNetworkingSockets, identityTarget: SteamNetworkingIdentity, nRemoteVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #no_context {
+    return SteamAPI_ISteamNetworkingSockets_ConnectToHostedDedicatedServer(self, *identityTarget, nRemoteVirtualPort, nOptions, pOptions);
+}
+SteamAPI_ISteamNetworkingSockets_GetHostedDedicatedServerPort :: (self: *ISteamNetworkingSockets) -> uint16 #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetHostedDedicatedServerPOPID :: (self: *ISteamNetworkingSockets) -> SteamNetworkingPOPID #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetHostedDedicatedServerAddress :: (self: *ISteamNetworkingSockets, pRouting: *SteamDatagramHostedAddress) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreateHostedDedicatedServerListenSocket :: (self: *ISteamNetworkingSockets, nLocalVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamListenSocket #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetGameCoordinatorServerLogin :: (self: *ISteamNetworkingSockets, pLoginInfo: *SteamDatagramGameCoordinatorServerLogin, pcbSignedBlob: *s32, pBlob: *void) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ConnectP2PCustomSignaling :: (self: *ISteamNetworkingSockets, pSignaling: *ISteamNetworkingConnectionSignaling, pPeerIdentity: *SteamNetworkingIdentity, nRemoteVirtualPort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamNetConnection #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ReceivedP2PCustomSignal :: (self: *ISteamNetworkingSockets, pMsg: *void, cbMsg: s32, pContext: *ISteamNetworkingSignalingRecvContext) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetCertificateRequest :: (self: *ISteamNetworkingSockets, pcbBlob: *s32, pBlob: *void, errMsg: *SteamNetworkingErrMsg) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_SetCertificate :: (self: *ISteamNetworkingSockets, pCertificate: *void, cbCertificate: s32, errMsg: *SteamNetworkingErrMsg) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_ResetIdentity :: (self: *ISteamNetworkingSockets, pIdentity: *SteamNetworkingIdentity) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_RunCallbacks :: (self: *ISteamNetworkingSockets) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_BeginAsyncRequestFakeIP :: (self: *ISteamNetworkingSockets, nNumPorts: s32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetFakeIP :: (self: *ISteamNetworkingSockets, idxFirstPort: s32, pInfo: *SteamNetworkingFakeIPResult_t) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreateListenSocketP2PFakeIP :: (self: *ISteamNetworkingSockets, idxFakePort: s32, nOptions: s32, pOptions: *SteamNetworkingConfigValue_t) -> HSteamListenSocket #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_GetRemoteFakeIPForConnection :: (self: *ISteamNetworkingSockets, hConn: HSteamNetConnection, pOutAddr: *SteamNetworkingIPAddr) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingSockets_CreateFakeUDPPort :: (self: *ISteamNetworkingSockets, idxFakeServerPort: s32) -> *ISteamNetworkingFakeUDPPort #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamNetworkingUtils_SteamAPI_v004 :: () -> *ISteamNetworkingUtils #foreign steam_api64;
+
+SteamAPI_ISteamNetworkingUtils_AllocateMessage :: (self: *ISteamNetworkingUtils, cbAllocateBuffer: s32) -> *SteamNetworkingMessage_t #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_InitRelayNetworkAccess :: (self: *ISteamNetworkingUtils) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetRelayNetworkStatus :: (self: *ISteamNetworkingUtils, pDetails: *SteamRelayNetworkStatus_t) -> ESteamNetworkingAvailability #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetLocalPingLocation :: (self: *ISteamNetworkingUtils, result: *SteamNetworkPingLocation_t) -> float #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_EstimatePingTimeBetweenTwoLocations :: (self: *ISteamNetworkingUtils, location1: *SteamNetworkPingLocation_t, location2: *SteamNetworkPingLocation_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_EstimatePingTimeBetweenTwoLocations :: (self: *ISteamNetworkingUtils, location1: SteamNetworkPingLocation_t, location2: SteamNetworkPingLocation_t) -> s32 #no_context {
+    return SteamAPI_ISteamNetworkingUtils_EstimatePingTimeBetweenTwoLocations(self, *location1, *location2);
+}
+SteamAPI_ISteamNetworkingUtils_EstimatePingTimeFromLocalHost :: (self: *ISteamNetworkingUtils, remoteLocation: *SteamNetworkPingLocation_t) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_EstimatePingTimeFromLocalHost :: (self: *ISteamNetworkingUtils, remoteLocation: SteamNetworkPingLocation_t) -> s32 #no_context {
+    return SteamAPI_ISteamNetworkingUtils_EstimatePingTimeFromLocalHost(self, *remoteLocation);
+}
+SteamAPI_ISteamNetworkingUtils_ConvertPingLocationToString :: (self: *ISteamNetworkingUtils, location: *SteamNetworkPingLocation_t, pszBuf: *u8, cchBufSize: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_ConvertPingLocationToString :: (self: *ISteamNetworkingUtils, location: SteamNetworkPingLocation_t, pszBuf: *u8, cchBufSize: s32) #no_context {
+    SteamAPI_ISteamNetworkingUtils_ConvertPingLocationToString(self, *location, pszBuf, cchBufSize);
+}
+SteamAPI_ISteamNetworkingUtils_ParsePingLocationString :: (self: *ISteamNetworkingUtils, pszString: *u8, result: *SteamNetworkPingLocation_t) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_CheckPingDataUpToDate :: (self: *ISteamNetworkingUtils, flMaxAgeSeconds: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetPingToDataCenter :: (self: *ISteamNetworkingUtils, popID: SteamNetworkingPOPID, pViaRelayPoP: *SteamNetworkingPOPID) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetDirectPingToPOP :: (self: *ISteamNetworkingUtils, popID: SteamNetworkingPOPID) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetPOPCount :: (self: *ISteamNetworkingUtils) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetPOPList :: (self: *ISteamNetworkingUtils, list: *SteamNetworkingPOPID, nListSz: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetLocalTimestamp :: (self: *ISteamNetworkingUtils) -> SteamNetworkingMicroseconds #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetDebugOutputFunction :: (self: *ISteamNetworkingUtils, eDetailLevel: ESteamNetworkingSocketsDebugOutputType, pfnFunc: FSteamNetworkingSocketsDebugOutput) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_IsFakeIPv4 :: (self: *ISteamNetworkingUtils, nIPv4: uint32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetIPv4FakeIPType :: (self: *ISteamNetworkingUtils, nIPv4: uint32) -> ESteamNetworkingFakeIPType #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetRealIdentityForFakeIP :: (self: *ISteamNetworkingUtils, fakeIP: *SteamNetworkingIPAddr, pOutRealIdentity: *SteamNetworkingIdentity) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetRealIdentityForFakeIP :: (self: *ISteamNetworkingUtils, fakeIP: SteamNetworkingIPAddr, pOutRealIdentity: *SteamNetworkingIdentity) -> EResult #no_context {
+    return SteamAPI_ISteamNetworkingUtils_GetRealIdentityForFakeIP(self, *fakeIP, pOutRealIdentity);
+}
+SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueInt32 :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, val: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueFloat :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, val: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueString :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, val: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValuePtr :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, val: *void) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueInt32 :: (self: *ISteamNetworkingUtils, hConn: HSteamNetConnection, eValue: ESteamNetworkingConfigValue, val: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueFloat :: (self: *ISteamNetworkingUtils, hConn: HSteamNetConnection, eValue: ESteamNetworkingConfigValue, val: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueString :: (self: *ISteamNetworkingUtils, hConn: HSteamNetConnection, eValue: ESteamNetworkingConfigValue, val: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamNetConnectionStatusChanged :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamNetConnectionStatusChanged) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamNetAuthenticationStatusChanged :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamNetAuthenticationStatusChanged) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamRelayNetworkStatusChanged :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamRelayNetworkStatusChanged) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_FakeIPResult :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamNetworkingFakeIPResult) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_MessagesSessionRequest :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamNetworkingMessagesSessionRequest) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_MessagesSessionFailed :: (self: *ISteamNetworkingUtils, fnCallback: FnSteamNetworkingMessagesSessionFailed) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConfigValue :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, eScopeType: ESteamNetworkingConfigScope, scopeObj: s64, eDataType: ESteamNetworkingConfigDataType, pArg: *void) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConfigValueStruct :: (self: *ISteamNetworkingUtils, opt: *SteamNetworkingConfigValue_t, eScopeType: ESteamNetworkingConfigScope, scopeObj: s64) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SetConfigValueStruct :: (self: *ISteamNetworkingUtils, opt: SteamNetworkingConfigValue_t, eScopeType: ESteamNetworkingConfigScope, scopeObj: s64) -> bool #no_context {
+    return SteamAPI_ISteamNetworkingUtils_SetConfigValueStruct(self, *opt, eScopeType, scopeObj);
+}
+SteamAPI_ISteamNetworkingUtils_GetConfigValue :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, eScopeType: ESteamNetworkingConfigScope, scopeObj: s64, pOutDataType: *ESteamNetworkingConfigDataType, pResult: *void, cbResult: *u64) -> ESteamNetworkingGetConfigValueResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_GetConfigValueInfo :: (self: *ISteamNetworkingUtils, eValue: ESteamNetworkingConfigValue, pOutDataType: *ESteamNetworkingConfigDataType, pOutScope: *ESteamNetworkingConfigScope) -> *u8 #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_IterateGenericEditableConfigValues :: (self: *ISteamNetworkingUtils, eCurrent: ESteamNetworkingConfigValue, bEnumerateDevVars: bool) -> ESteamNetworkingConfigValue #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_ToString :: (self: *ISteamNetworkingUtils, addr: *SteamNetworkingIPAddr, buf: *u8, cbBuf: uint32, bWithPort: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_ToString :: (self: *ISteamNetworkingUtils, addr: SteamNetworkingIPAddr, buf: *u8, cbBuf: uint32, bWithPort: bool) #no_context {
+    SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_ToString(self, *addr, buf, cbBuf, bWithPort);
+}
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_ParseString :: (self: *ISteamNetworkingUtils, pAddr: *SteamNetworkingIPAddr, pszStr: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_GetFakeIPType :: (self: *ISteamNetworkingUtils, addr: *SteamNetworkingIPAddr) -> ESteamNetworkingFakeIPType #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_GetFakeIPType :: (self: *ISteamNetworkingUtils, addr: SteamNetworkingIPAddr) -> ESteamNetworkingFakeIPType #no_context {
+    return SteamAPI_ISteamNetworkingUtils_SteamNetworkingIPAddr_GetFakeIPType(self, *addr);
+}
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIdentity_ToString :: (self: *ISteamNetworkingUtils, identity: *SteamNetworkingIdentity, buf: *u8, cbBuf: uint32) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIdentity_ToString :: (self: *ISteamNetworkingUtils, identity: SteamNetworkingIdentity, buf: *u8, cbBuf: uint32) #no_context {
+    SteamAPI_ISteamNetworkingUtils_SteamNetworkingIdentity_ToString(self, *identity, buf, cbBuf);
+}
+SteamAPI_ISteamNetworkingUtils_SteamNetworkingIdentity_ParseString :: (self: *ISteamNetworkingUtils, pIdentity: *SteamNetworkingIdentity, pszStr: *u8) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServer_v015 :: () -> *ISteamGameServer #foreign steam_api64;
+
+SteamAPI_ISteamGameServer_SetProduct :: (self: *ISteamGameServer, pszProduct: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetGameDescription :: (self: *ISteamGameServer, pszGameDescription: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetModDir :: (self: *ISteamGameServer, pszModDir: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetDedicatedServer :: (self: *ISteamGameServer, bDedicated: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_LogOn :: (self: *ISteamGameServer, pszToken: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_LogOnAnonymous :: (self: *ISteamGameServer) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_LogOff :: (self: *ISteamGameServer) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_BLoggedOn :: (self: *ISteamGameServer) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_BSecure :: (self: *ISteamGameServer) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetSteamID :: (self: *ISteamGameServer) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamGameServer_WasRestartRequested :: (self: *ISteamGameServer) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetMaxPlayerCount :: (self: *ISteamGameServer, cPlayersMax: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetBotPlayerCount :: (self: *ISteamGameServer, cBotplayers: s32) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetServerName :: (self: *ISteamGameServer, pszServerName: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetMapName :: (self: *ISteamGameServer, pszMapName: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetPasswordProtected :: (self: *ISteamGameServer, bPasswordProtected: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetSpectatorPort :: (self: *ISteamGameServer, unSpectatorPort: uint16) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetSpectatorServerName :: (self: *ISteamGameServer, pszSpectatorServerName: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_ClearAllKeyValues :: (self: *ISteamGameServer) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetKeyValue :: (self: *ISteamGameServer, pKey: *u8, pValue: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetGameTags :: (self: *ISteamGameServer, pchGameTags: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetGameData :: (self: *ISteamGameServer, pchGameData: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetRegion :: (self: *ISteamGameServer, pszRegion: *u8) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_SetAdvertiseServerActive :: (self: *ISteamGameServer, bActive: bool) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetAuthSessionTicket :: (self: *ISteamGameServer, pTicket: *void, cbMaxTicket: s32, pcbTicket: *uint32, pSnid: *SteamNetworkingIdentity) -> HAuthTicket #foreign steam_api64;
+SteamAPI_ISteamGameServer_BeginAuthSession :: (self: *ISteamGameServer, pAuthTicket: *void, cbAuthTicket: s32, steamID: uint64_steamid) -> EBeginAuthSessionResult #foreign steam_api64;
+SteamAPI_ISteamGameServer_EndAuthSession :: (self: *ISteamGameServer, steamID: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_CancelAuthTicket :: (self: *ISteamGameServer, hAuthTicket: HAuthTicket) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_UserHasLicenseForApp :: (self: *ISteamGameServer, steamID: uint64_steamid, appID: AppId_t) -> EUserHasLicenseForAppResult #foreign steam_api64;
+SteamAPI_ISteamGameServer_RequestUserGroupStatus :: (self: *ISteamGameServer, steamIDUser: uint64_steamid, steamIDGroup: uint64_steamid) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetGameplayStats :: (self: *ISteamGameServer) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetServerReputation :: (self: *ISteamGameServer) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetPublicIP :: (self: *ISteamGameServer) -> SteamIPAddress_t #foreign steam_api64;
+SteamAPI_ISteamGameServer_HandleIncomingPacket :: (self: *ISteamGameServer, pData: *void, cbData: s32, srcIP: uint32, srcPort: uint16) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_GetNextOutgoingPacket :: (self: *ISteamGameServer, pOut: *void, cbMaxOut: s32, pNetAdr: *uint32, pPort: *uint16) -> s32 #foreign steam_api64;
+SteamAPI_ISteamGameServer_AssociateWithClan :: (self: *ISteamGameServer, steamIDClan: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamGameServer_ComputeNewPlayerCompatibility :: (self: *ISteamGameServer, steamIDNewPlayer: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamGameServer_SendUserConnectAndAuthenticate_DEPRECATED :: (self: *ISteamGameServer, unIPClient: uint32, pvAuthBlob: *void, cubAuthBlobSize: uint32, pSteamIDUser: *CSteamID) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServer_CreateUnauthenticatedUserConnection :: (self: *ISteamGameServer) -> uint64_steamid #foreign steam_api64;
+SteamAPI_ISteamGameServer_SendUserDisconnect_DEPRECATED :: (self: *ISteamGameServer, steamIDUser: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_ISteamGameServer_BUpdateUserData :: (self: *ISteamGameServer, steamIDUser: uint64_steamid, pchPlayerName: *u8, uScore: uint32) -> bool #foreign steam_api64;
+
+// A versioned accessor is exported by the library
+SteamAPI_SteamGameServerStats_v001 :: () -> *ISteamGameServerStats #foreign steam_api64;
+
+SteamAPI_ISteamGameServerStats_RequestUserStats :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_GetUserStatInt32 :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, pData: *int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_GetUserStatFloat :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, pData: *float) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_GetUserAchievement :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, pbAchieved: *bool) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_SetUserStatInt32 :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, nData: int32) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_SetUserStatFloat :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, fData: float) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_UpdateUserAvgRateStat :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8, flCountThisSession: float, dSessionLength: float64) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_SetUserAchievement :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_ClearUserAchievement :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid, pchName: *u8) -> bool #foreign steam_api64;
+SteamAPI_ISteamGameServerStats_StoreUserStats :: (self: *ISteamGameServerStats, steamIDUser: uint64_steamid) -> SteamAPICall_t #foreign steam_api64;
+
+// ISteamNetworkingFakeUDPPort
+SteamAPI_ISteamNetworkingFakeUDPPort_DestroyFakeUDPPort :: (self: *ISteamNetworkingFakeUDPPort) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingFakeUDPPort_SendMessageToFakeIP :: (self: *ISteamNetworkingFakeUDPPort, remoteAddress: *SteamNetworkingIPAddr, pData: *void, cbData: uint32, nSendFlags: s32) -> EResult #foreign steam_api64;
+SteamAPI_ISteamNetworkingFakeUDPPort_SendMessageToFakeIP :: (self: *ISteamNetworkingFakeUDPPort, remoteAddress: SteamNetworkingIPAddr, pData: *void, cbData: uint32, nSendFlags: s32) -> EResult #no_context {
+    return SteamAPI_ISteamNetworkingFakeUDPPort_SendMessageToFakeIP(self, *remoteAddress, pData, cbData, nSendFlags);
+}
+SteamAPI_ISteamNetworkingFakeUDPPort_ReceiveMessages :: (self: *ISteamNetworkingFakeUDPPort, ppOutMessages: **SteamNetworkingMessage_t, nMaxMessages: s32) -> s32 #foreign steam_api64;
+SteamAPI_ISteamNetworkingFakeUDPPort_ScheduleCleanup :: (self: *ISteamNetworkingFakeUDPPort, remoteAddress: *SteamNetworkingIPAddr) -> void #foreign steam_api64;
+SteamAPI_ISteamNetworkingFakeUDPPort_ScheduleCleanup :: (self: *ISteamNetworkingFakeUDPPort, remoteAddress: SteamNetworkingIPAddr) #no_context {
+    SteamAPI_ISteamNetworkingFakeUDPPort_ScheduleCleanup(self, *remoteAddress);
+}
+
+// SteamIPAddress_t
+SteamAPI_SteamIPAddress_t_IsSet :: (self: *SteamIPAddress_t) -> bool #foreign steam_api64;
+
+// MatchMakingKeyValuePair_t
+SteamAPI_MatchMakingKeyValuePair_t_Construct :: (self: *MatchMakingKeyValuePair_t) -> void #foreign steam_api64;
+
+// servernetadr_t
+SteamAPI_servernetadr_t_Construct :: (self: *servernetadr_t) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_Init :: (self: *servernetadr_t, ip: u32, usQueryPort: uint16, usConnectionPort: uint16) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_GetQueryPort :: (self: *servernetadr_t) -> uint16 #foreign steam_api64;
+SteamAPI_servernetadr_t_SetQueryPort :: (self: *servernetadr_t, usPort: uint16) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_GetConnectionPort :: (self: *servernetadr_t) -> uint16 #foreign steam_api64;
+SteamAPI_servernetadr_t_SetConnectionPort :: (self: *servernetadr_t, usPort: uint16) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_GetIP :: (self: *servernetadr_t) -> uint32 #foreign steam_api64;
+SteamAPI_servernetadr_t_SetIP :: (self: *servernetadr_t, unIP: uint32) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_GetConnectionAddressString :: (self: *servernetadr_t) -> *u8 #foreign steam_api64;
+SteamAPI_servernetadr_t_GetQueryAddressString :: (self: *servernetadr_t) -> *u8 #foreign steam_api64;
+SteamAPI_servernetadr_t_IsLessThan :: (self: *servernetadr_t, netadr: *servernetadr_t) -> bool #foreign steam_api64;
+SteamAPI_servernetadr_t_IsLessThan :: (self: *servernetadr_t, netadr: servernetadr_t) -> bool #no_context {
+    return SteamAPI_servernetadr_t_IsLessThan(self, *netadr);
+}
+SteamAPI_servernetadr_t_Assign :: (self: *servernetadr_t, that: *servernetadr_t) -> void #foreign steam_api64;
+SteamAPI_servernetadr_t_Assign :: (self: *servernetadr_t, that: servernetadr_t) #no_context {
+    SteamAPI_servernetadr_t_Assign(self, *that);
+}
+
+// gameserveritem_t
+SteamAPI_gameserveritem_t_Construct :: (self: *gameserveritem_t) -> void #foreign steam_api64;
+SteamAPI_gameserveritem_t_GetName :: (self: *gameserveritem_t) -> *u8 #foreign steam_api64;
+SteamAPI_gameserveritem_t_SetName :: (self: *gameserveritem_t, pName: *u8) -> void #foreign steam_api64;
+
+// SteamNetworkingIPAddr
+SteamAPI_SteamNetworkingIPAddr_Clear :: (self: *SteamNetworkingIPAddr) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsIPv6AllZeros :: (self: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_SetIPv6 :: (self: *SteamNetworkingIPAddr, ipv6: *uint8, nPort: uint16) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_SetIPv4 :: (self: *SteamNetworkingIPAddr, nIP: uint32, nPort: uint16) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsIPv4 :: (self: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_GetIPv4 :: (self: *SteamNetworkingIPAddr) -> uint32 #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_SetIPv6LocalHost :: (self: *SteamNetworkingIPAddr, nPort: uint16) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsLocalHost :: (self: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_ToString :: (self: *SteamNetworkingIPAddr, buf: *u8, cbBuf: uint32, bWithPort: bool) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_ParseString :: (self: *SteamNetworkingIPAddr, pszStr: *u8) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsEqualTo :: (self: *SteamNetworkingIPAddr, x: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsEqualTo :: (self: *SteamNetworkingIPAddr, x: SteamNetworkingIPAddr) -> bool #no_context {
+    return SteamAPI_SteamNetworkingIPAddr_IsEqualTo(self, *x);
+}
+SteamAPI_SteamNetworkingIPAddr_GetFakeIPType :: (self: *SteamNetworkingIPAddr) -> ESteamNetworkingFakeIPType #foreign steam_api64;
+SteamAPI_SteamNetworkingIPAddr_IsFakeIP :: (self: *SteamNetworkingIPAddr) -> bool #foreign steam_api64;
+
+// SteamNetworkingIdentity
+SteamAPI_SteamNetworkingIdentity_Clear :: (self: *SteamNetworkingIdentity) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_IsInvalid :: (self: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetSteamID :: (self: *SteamNetworkingIdentity, steamID: uint64_steamid) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetSteamID :: (self: *SteamNetworkingIdentity) -> uint64_steamid #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetSteamID64 :: (self: *SteamNetworkingIdentity, steamID: uint64) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetSteamID64 :: (self: *SteamNetworkingIdentity) -> uint64 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetXboxPairwiseID :: (self: *SteamNetworkingIdentity, pszString: *u8) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetXboxPairwiseID :: (self: *SteamNetworkingIdentity) -> *u8 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetPSNID :: (self: *SteamNetworkingIdentity, id: uint64) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetPSNID :: (self: *SteamNetworkingIdentity) -> uint64 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetStadiaID :: (self: *SteamNetworkingIdentity, id: uint64) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetStadiaID :: (self: *SteamNetworkingIdentity) -> uint64 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetIPAddr :: (self: *SteamNetworkingIdentity, addr: *SteamNetworkingIPAddr) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetIPAddr :: (self: *SteamNetworkingIdentity, addr: SteamNetworkingIPAddr) #no_context {
+    SteamAPI_SteamNetworkingIdentity_SetIPAddr(self, *addr);
+}
+SteamAPI_SteamNetworkingIdentity_GetIPAddr :: (self: *SteamNetworkingIdentity) -> *SteamNetworkingIPAddr #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetIPv4Addr :: (self: *SteamNetworkingIdentity, nIPv4: uint32, nPort: uint16) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetIPv4 :: (self: *SteamNetworkingIdentity) -> uint32 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetFakeIPType :: (self: *SteamNetworkingIdentity) -> ESteamNetworkingFakeIPType #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_IsFakeIP :: (self: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetLocalHost :: (self: *SteamNetworkingIdentity) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_IsLocalHost :: (self: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetGenericString :: (self: *SteamNetworkingIdentity, pszString: *u8) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetGenericString :: (self: *SteamNetworkingIdentity) -> *u8 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_SetGenericBytes :: (self: *SteamNetworkingIdentity, data: *void, cbLen: uint32) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_GetGenericBytes :: (self: *SteamNetworkingIdentity, cbLen: *s32) -> *uint8 #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_IsEqualTo :: (self: *SteamNetworkingIdentity, x: *SteamNetworkingIdentity) -> bool #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_IsEqualTo :: (self: *SteamNetworkingIdentity, x: SteamNetworkingIdentity) -> bool #no_context {
+    return SteamAPI_SteamNetworkingIdentity_IsEqualTo(self, *x);
+}
+SteamAPI_SteamNetworkingIdentity_ToString :: (self: *SteamNetworkingIdentity, buf: *u8, cbBuf: uint32) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingIdentity_ParseString :: (self: *SteamNetworkingIdentity, pszStr: *u8) -> bool #foreign steam_api64;
+
+// SteamNetworkingMessage_t
+SteamAPI_SteamNetworkingMessage_t_Release :: (self: *SteamNetworkingMessage_t) -> void #foreign steam_api64;
+
+// SteamNetworkingConfigValue_t
+SteamAPI_SteamNetworkingConfigValue_t_SetInt32 :: (self: *SteamNetworkingConfigValue_t, eVal: ESteamNetworkingConfigValue, data: s32) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingConfigValue_t_SetInt64 :: (self: *SteamNetworkingConfigValue_t, eVal: ESteamNetworkingConfigValue, data: s64) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingConfigValue_t_SetFloat :: (self: *SteamNetworkingConfigValue_t, eVal: ESteamNetworkingConfigValue, data: float) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingConfigValue_t_SetPtr :: (self: *SteamNetworkingConfigValue_t, eVal: ESteamNetworkingConfigValue, data: *void) -> void #foreign steam_api64;
+SteamAPI_SteamNetworkingConfigValue_t_SetString :: (self: *SteamNetworkingConfigValue_t, eVal: ESteamNetworkingConfigValue, data: *u8) -> void #foreign steam_api64;
+
+// SteamDatagramHostedAddress
+SteamAPI_SteamDatagramHostedAddress_Clear :: (self: *SteamDatagramHostedAddress) -> void #foreign steam_api64;
+SteamAPI_SteamDatagramHostedAddress_GetPopID :: (self: *SteamDatagramHostedAddress) -> SteamNetworkingPOPID #foreign steam_api64;
+SteamAPI_SteamDatagramHostedAddress_SetDevAddress :: (self: *SteamDatagramHostedAddress, nIP: uint32, nPort: uint16, popid: SteamNetworkingPOPID) -> void #foreign steam_api64;
 
 #scope_file
 
