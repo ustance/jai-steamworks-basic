@@ -3,6 +3,84 @@
 
 #import "Basic";
 
+// Boilerplate for interfaces
+// will put `steam_user: *ISteamUser;` in global scope and init it in `init_steam()`
+Steam_Interface :: struct {
+    variable_name: string;
+    func: string;
+    variable_type: string;
+}
+
+interfaces :: Steam_Interface.[
+    .{"user", "SteamAPI_SteamUser_v023", "ISteamUser"},
+    .{"friends", "SteamAPI_SteamFriends_v017", "ISteamFriends"},
+    .{"utils", "SteamAPI_SteamUtils_v010", "ISteamUtils"},
+    .{"game_server_utils", "SteamAPI_SteamGameServerUtils_v010", "ISteamUtils"},
+    .{"matchmaking", "SteamAPI_SteamMatchmaking_v009", "ISteamMatchmaking"},
+    .{"matchmaking_servers", "SteamAPI_SteamMatchmakingServers_v002", "ISteamMatchmakingServers"},
+    .{"game_search", "SteamAPI_SteamGameSearch_v001", "ISteamGameSearch"},
+    .{"parties", "SteamAPI_SteamParties_v002", "ISteamParties"},
+    .{"remote_storage", "SteamAPI_SteamRemoteStorage_v016", "ISteamRemoteStorage"},
+    .{"user_stats", "SteamAPI_SteamUserStats_v012", "ISteamUserStats"},
+    .{"apps", "SteamAPI_SteamApps_v008", "ISteamApps"},
+    .{"networking", "SteamAPI_SteamNetworking_v006", "ISteamNetworking"},
+    .{"game_server_networking", "SteamAPI_SteamGameServerNetworking_v006", "ISteamNetworking"},
+    .{"screenshots", "SteamAPI_SteamScreenshots_v003", "ISteamScreenshots"},
+    .{"music", "SteamAPI_SteamMusic_v001", "ISteamMusic"},
+    .{"music_remote", "SteamAPI_SteamMusicRemote_v001", "ISteamMusicRemote"},
+    .{"http", "SteamAPI_SteamHTTP_v003", "ISteamHTTP"},
+    .{"server_http", "SteamAPI_SteamGameServerHTTP_v003", "ISteamHTTP"},
+    .{"input", "SteamAPI_SteamInput_v006", "ISteamInput"},
+    .{"controller", "SteamAPI_SteamController_v008", "ISteamController"},
+    .{"ugc", "SteamAPI_SteamUGC_v020", "ISteamUGC"},
+    .{"game_server_ugc", "SteamAPI_SteamGameServerUGC_v020", "ISteamUGC"},
+    .{"html_surface", "SteamAPI_SteamHTMLSurface_v005", "ISteamHTMLSurface"},
+    .{"inventory", "SteamAPI_SteamInventory_v003", "ISteamInventory"},
+    .{"game_server_inventory", "SteamAPI_SteamGameServerInventory_v003", "ISteamInventory"},
+    .{"timeline", "SteamAPI_SteamTimeline_v001", "ISteamTimeline"},
+    .{"video", "SteamAPI_SteamVideo_v007", "ISteamVideo"},
+    .{"parential_settings", "SteamAPI_SteamParentalSettings_v001", "ISteamParentalSettings"},
+    .{"remote_play", "SteamAPI_SteamRemotePlay_v002", "ISteamRemotePlay"},
+    .{"networking_messages", "SteamAPI_SteamNetworkingMessages_SteamAPI_v002", "ISteamNetworkingMessages"},
+    .{"game_server_networking_messages", "SteamAPI_SteamGameServerNetworkingMessages_SteamAPI_v002", "ISteamNetworkingMessages"},
+    .{"networking_sockets", "SteamAPI_SteamNetworkingSockets_SteamAPI_v012", "ISteamNetworkingSockets"},
+    .{"game_server_networking_sockets", "SteamAPI_SteamGameServerNetworkingSockets_SteamAPI_v012", "ISteamNetworkingSockets"},
+    .{"networking_utils", "SteamAPI_SteamNetworkingUtils_SteamAPI_v004", "ISteamNetworkingUtils"},
+    .{"game_server", "SteamAPI_SteamGameServer_v015", "ISteamGameServer"},
+    .{"game_server_stats", "SteamAPI_SteamGameServerStats_v001", "ISteamGameServerStats"},
+];
+
+#insert #run () -> string {
+    builder: String_Builder;
+    
+    for interfaces {
+        append(*builder, tprint("steam_%: *%;\n", it.variable_name, it.variable_type));
+    }
+    
+    return builder_to_string(*builder);
+}();
+
+init_steam :: () {
+    msg: SteamErrMsg;
+    steam_result := SteamAPI_InitFlat(*msg);
+    
+    if steam_result != .OK {
+        assert(false, "Steam fault!\n");
+    }
+    SteamAPI_ManualDispatch_Init();
+    
+    // Interfaces
+    #insert #run () -> string {
+        builder: String_Builder;
+        
+        for interfaces {
+            append(*builder, tprint("steam_% = %();\n", it.variable_name, it.func));
+        }
+        
+        return builder_to_string(*builder);
+    }();
+}
+
 // for_expansion and some other stuff tactically yoinked from https://github.com/onelivesleft/jai-steam/blob/main/steam_flat.jai
 // feel free to delete it
 
